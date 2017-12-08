@@ -1,9 +1,6 @@
-import org.apache.jena.base.Sys;
-
 import java.io.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.Calendar;
 
 public class TextTool {
 
@@ -69,7 +66,6 @@ public class TextTool {
 
     private static String getOutputDirName()
     {
-        Calendar cal = Calendar.getInstance();
         LocalDate date = LocalDate.now();
         int year = date.getYear();
         int month = date.getMonthValue();
