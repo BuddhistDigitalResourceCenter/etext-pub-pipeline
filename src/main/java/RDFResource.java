@@ -104,7 +104,9 @@ public class RDFResource implements RDFProperty {
                 }
             }
 
-            return literal.getString();
+            if (literal != null) {
+                return literal.getString();
+            }
         }
 
         return null;
