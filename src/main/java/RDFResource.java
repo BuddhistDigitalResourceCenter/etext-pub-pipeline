@@ -17,6 +17,12 @@ public class RDFResource implements RDFProperty {
         model = resource.getModel();
     }
 
+    @Override
+    public String getType()
+    {
+        return getTypeIRI();
+    }
+
     public String getTypeIRI()
     {
         String typeIRI = null;

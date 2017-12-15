@@ -6,6 +6,7 @@ import org.apache.jena.rdf.model.Resource;
 
 interface RDFProperty
 {
+    public String getType();
     public boolean isLiteral();
     public RDFLiteral asLiteral();
     public RDFResource asResource();

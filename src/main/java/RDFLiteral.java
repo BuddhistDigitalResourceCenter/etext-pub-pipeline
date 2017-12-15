@@ -4,6 +4,11 @@ public class RDFLiteral implements RDFProperty {
 
     Literal literal;
 
+    @Override
+    public String getType() {
+        return literal.getDatatypeURI();
+    }
+
     public RDFLiteral(Literal literal)
     {
         this.literal = literal;
