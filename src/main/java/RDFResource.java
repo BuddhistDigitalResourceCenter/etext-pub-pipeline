@@ -84,6 +84,11 @@ public class RDFResource implements RDFProperty {
         }
     }
 
+    public String getString(String IRI)
+    {
+        return getString(IRI, null);
+    }
+
     public String getString(String IRI, String preferredLanguage)
     {
         if (hasLiteral(IRI)) {
@@ -93,7 +98,7 @@ public class RDFResource implements RDFProperty {
             for (RDFProperty prop : properties) {
                 if (prop.isLiteral()) {
                     literal = prop.asLiteral();
-                    if (literal.language().equals(preferredLanguage)) {
+                    if (preferredLanguage == null || literal.language().equals(preferredLanguage)) {
                         return literal.getString();
                     }
                 }
