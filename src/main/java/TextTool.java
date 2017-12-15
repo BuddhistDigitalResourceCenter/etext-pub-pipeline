@@ -8,27 +8,53 @@ public class TextTool {
 
     public static void main(String[] args)
     {
-
         if (args.length < 3) {
             System.out.println("Three arguments are required: data path, text id and output dir");
             return;
         }
 
         String dataPath = ensureTrailingSlash(args[0]);
-        String textId = args[1];
+        String id = args[1];
         String outputDirPath = ensureTrailingSlash(args[2]);
-
         FileDataSource ds = new FileDataSource(dataPath);
+        String dirName = getOutputDirName();
+        String markdownFilePath = outputDirPath + dirName + "/" + id + ".md";
 
+        String markdown;
+        String firstChar = String.valueOf(id.charAt(0));
+        switch(firstChar) {
+            case "I":
+                markdown = generateItemMarkdown(id, ds);
+                break;
+            case "U":
+                markdown = generateTextMarkdown(id, ds);
+                break;
+            default:
+                markdown = null;
+        }
+
+        if (markdown != null) {
+            saveStringToFile(markdown, markdownFilePath);
+            System.out.println("Generated markdown file: " + markdownFilePath);
+        } else {
+            System.out.println("Nothing generated");
+        }
+    }
+
+    private static String generateTextMarkdown(String textId, DataSource ds)
+    {
         String etextIRI = BDR + textId;
         Etext etext = new Etext(etextIRI, ds);
 
-        String dirName = getOutputDirName();
-        String markdownFilePath = outputDirPath + dirName + "/" + textId + ".md";
+        return etext.generateMarkdown();
+    }
 
-        saveStringToFile(etext.generateMarkdown(), markdownFilePath);
+    private static String generateItemMarkdown(String itemId, DataSource ds)
+    {
+        String itemIRI = BDR + itemId;
+        Item item = new Item(itemIRI, ds);
 
-        System.out.println("Generated markdown file: " + markdownFilePath);
+        return item.generateMarkdown();
     }
 
     private static boolean saveStringToFile(String text, String filePath)
