@@ -63,9 +63,11 @@ public class RDFResource implements RDFProperty {
     {
         List<RDFResource> resources = new ArrayList<>();
         List<RDFProperty> properties = getProperties(IRI);
-        for (RDFProperty property : properties) {
-            if (!property.isLiteral()) {
-                resources.add(property.asResource());
+        if (properties != null) {
+            for (RDFProperty property : properties) {
+                if (!property.isLiteral()) {
+                    resources.add(property.asResource());
+                }
             }
         }
 
