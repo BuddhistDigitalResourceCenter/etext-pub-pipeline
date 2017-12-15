@@ -3,96 +3,75 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 
-public class Etext {
+public class Etext extends BDRCResource {
 
-    private static final String CORE = "http://purl.bdrc.io/ontology/core/";
-    private static final String BDR = "http://purl.bdrc.io/resource/";
-    private static final String RDFS = "http://www.w3.org/2000/01/rdf-schema#";
-    private static final String RDF = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
-    private static final String PREFERRED_LANGUAGE = "bo";
-
-    private String IRI;
-    private DataSource dataSource;
+    private RDFResource etext;
+    private RDFResource item;
 
     public Etext(String IRI, DataSource dataSource)
     {
-        this.IRI = IRI;
-        this.dataSource = dataSource;
+        this(IRI, dataSource, null);
+    }
+
+    public Etext(String IRI, DataSource dataSource, RDFResource item) {
+        super(IRI, dataSource);
+
+        this.etext = dataSource.loadResource(IRI);
+        this.item = item;
     }
 
     public String generateMarkdown()
     {
-        RDFResource etext = dataSource.loadResource(IRI);
+        if (etext == null) {
+            return null;
+        }
+
         String title = getTitle();
-        String name = getPrimaryName(
-                getMainAuthor(
-                        getWork(
-                                getItem(
-                                        etext
-                                )
-                        )
-                ),
-                PREFERRED_LANGUAGE
-        );
+
+        RDFResource author = null;
+        author = getMainAuthor();
+        String name = null;
+        if (author != null) {
+            name = getPrimaryName(author, PREFERRED_LANGUAGE);
+        }
+
         String content = getContent();
 
         StringBuilder sb = new StringBuilder();
-
         sb.append("# ").append(title).append("\n\n");
-        sb.append("## ").append(name).append(" {.author}").append("\n\n");
+        if (name != null) {
+            sb.append("## ").append(name).append(" {.author}").append("\n\n");
+        }
         sb.append(content);
 
         return sb.toString();
     }
 
-    private RDFResource getEtext()
+    private RDFResource getItem()
     {
-        return dataSource.loadResource(IRI);
+        if (item == null && etext != null) {
+            item = etext.getPropertyResource(CORE+"eTextInItem");
+            item = dataSource.loadResource(item.getIRI());
+        }
+
+        return item;
     }
 
-    private RDFResource getItem(RDFResource eText)
+    protected RDFResource getWork()
     {
-        RDFResource item = eText.getPropertyResource(CORE+"eTextInItem");
+        if (work == null && getItem() != null) {
+            work = item.getPropertyResource(CORE+"itemForWork");
+            work = dataSource.loadResource(work.getIRI());
+        }
 
-        return dataSource.loadResource(item.getIRI());
+        return work;
     }
 
-    private RDFResource getWork(RDFResource item)
-    {
-        RDFResource work = item.getPropertyResource(CORE+"itemForWork");
-
-        return dataSource.loadResource(work.getIRI());
-    }
-
-    private RDFResource getMainAuthor(RDFResource work)
-    {
-        RDFResource author = work.getPropertyResource(CORE+"creatorMainAuthor");
-
-        return dataSource.loadResource(author.getIRI());
-    }
-
-    private List<RDFResource> getAuthorNames(RDFResource author)
-    {
-        return author.getPropertyResources(CORE+"personName");
-    }
-
-    private String getPrimaryName(RDFResource author, String preferredLanguage)
-    {
-        List<RDFResource> authorNames = getAuthorNames(author);
-        String primaryNameIRI = CORE+"PersonPrimaryName";
-        List<RDFResource> primaryNames = authorNames
-                .stream()
-                .filter(n -> n.getTypeIRI().equals(primaryNameIRI))
-                .collect(toList());
-
-        return primaryNames.get(0).getString(RDFS+"label", preferredLanguage);
-    }
-
-    private String getTitle()
+    protected String getTitle()
     {
         String eTextTitleIRI = CORE + "eTextTitle";
 
-        return getEtext().getString(eTextTitleIRI, PREFERRED_LANGUAGE);
+        return etext.getString(eTextTitleIRI, PREFERRED_LANGUAGE);
     }
 
     private String getContent()
