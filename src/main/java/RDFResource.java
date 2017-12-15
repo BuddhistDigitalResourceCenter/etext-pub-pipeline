@@ -84,6 +84,16 @@ public class RDFResource implements RDFProperty {
         }
     }
 
+    public Integer getInteger(String IRI)
+    {
+        String value = getString(IRI);
+        if (value == null) {
+            return null;
+        } else {
+            return new Integer(value);
+        }
+    }
+
     public String getString(String IRI)
     {
         return getString(IRI, null);
