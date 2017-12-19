@@ -30,6 +30,17 @@ public class FileDataSource implements DataSource {
     @Override
     public String loadTextContent(String IRI)
     {
+        List<String> lines = loadTextContentLines(IRI);
+        if (lines != null) {
+            return String.join("", lines);
+        } else {
+            return "";
+        }
+    }
+
+    @Override
+    public List<String> loadTextContentLines(String IRI)
+    {
         String id = RDFUtil.getId(IRI);
         String textContentPath = getTextFilePath(id);
         List<String> textContentLines;
@@ -42,7 +53,7 @@ public class FileDataSource implements DataSource {
             return null;
         }
 
-        return String.join("", textContentLines);
+        return textContentLines;
     }
 
     private String getDataFilePath(String id)
