@@ -6,6 +6,7 @@ import java.util.List;
 
 public class FileDataSource implements DataSource {
 
+    private static String ontologyFileName = "bdrc.owl";
     private String dataPath;
 
     /**
@@ -21,7 +22,7 @@ public class FileDataSource implements DataSource {
     public RDFResource loadResource(String IRI)
     {
         String id = RDFUtil.getId(IRI);
-        RDFModel model = new RDFModel(getDataFilePath(id));
+        RDFModel model = new RDFModel(getDataFilePath(id), getOntologyPath());
         RDFResource resource = model.getResource(IRI);
 
         return resource;
@@ -59,6 +60,11 @@ public class FileDataSource implements DataSource {
     private String getDataFilePath(String id)
     {
         return this.dataPath + id + ".ttl";
+    }
+
+    private String getOntologyPath()
+    {
+        return this.dataPath + ontologyFileName;
     }
 
     private String getTextFilePath(String id)

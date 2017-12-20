@@ -1,3 +1,4 @@
+import org.apache.jena.ontology.OntModel;
 import org.apache.jena.rdf.model.*;
 
 import java.net.URI;
@@ -8,19 +9,27 @@ public class RDFResource implements RDFProperty {
 
     private Resource resource;
     private Model model;
+    private OntModel ontModel;
 
     static final String TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 
-    public RDFResource(Resource resource)
+    public RDFResource(Resource resource, OntModel ontModel)
     {
         this.resource = resource;
         model = resource.getModel();
+        this.ontModel = ontModel;
     }
 
     @Override
     public String getType()
     {
         return getTypeIRI();
+    }
+
+    @Override
+    public OntModel getOntModel()
+    {
+        return ontModel;
     }
 
     public String getTypeIRI()
@@ -40,6 +49,26 @@ public class RDFResource implements RDFProperty {
 
     }
 
+    public List<RDFProperty> getAllProperties()
+    {
+        List<RDFProperty> properties = new ArrayList<>();
+        StmtIterator statements = resource.listProperties();
+        while(statements.hasNext()) {
+            Statement statement = statements.nextStatement();
+
+            RDFProperty property;
+            if (statement.getObject().isLiteral()) {
+                property = new RDFLiteral(statement.getLiteral(), ontModel);
+            } else {
+                property = new RDFResource(statement.getResource(), ontModel);
+            }
+
+            properties.add(property);
+        }
+
+        return properties;
+    }
+
     public List<RDFProperty> getProperties(String IRI)
     {
         Property prop = property(IRI);
@@ -48,12 +77,12 @@ public class RDFResource implements RDFProperty {
             StmtIterator statements = resource.listProperties(prop);
             while(statements.hasNext()) {
                 Statement statement = statements.nextStatement();
-
+//                System.out.println(statement.getPredicate());
                 RDFProperty property;
                 if (statement.getObject().isLiteral()) {
-                    property = new RDFLiteral(statement.getLiteral());
+                    property = new RDFLiteral(statement.getLiteral(), ontModel);
                 } else {
-                    property = new RDFResource(statement.getResource());
+                    property = new RDFResource(statement.getResource(), ontModel);
                 }
 
                 properties.add(property);

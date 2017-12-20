@@ -1,3 +1,6 @@
+import org.apache.jena.ontology.OntModel;
+import org.apache.jena.ontology.OntResource;
+
 import java.net.URI;
 
 public class RDFUtil {
@@ -13,5 +16,23 @@ public class RDFUtil {
         } catch (Exception e) {}
 
         return id;
+    }
+
+    public static String getReadableName(String IRI)
+    {
+        String name = getId(IRI);
+
+        return name;
+    }
+
+    public static String getOntologyLabel(OntModel ontModel, String IRI)
+    {
+        OntResource propResource = ontModel.getOntResource(IRI);
+        String label = getReadableName(IRI);
+        if (propResource != null) {
+            label = propResource.getLabel("en");
+        }
+
+        return label;
     }
 }

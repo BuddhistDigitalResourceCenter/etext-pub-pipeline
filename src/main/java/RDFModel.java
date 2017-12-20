@@ -14,14 +14,15 @@ interface RDFProperty
 
 public class RDFModel {
     private Model model;
+    private OntModel ontologyModel;
 
-    public RDFModel(String modelPath)
+    public RDFModel(String modelPath, String ontologyPath)
     {
         model = ModelFactory.createDefaultModel();
         model.read(modelPath);
 
-//        ontologyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
-//        ontologyModel.read(ontologyPath);
+        ontologyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
+        ontologyModel.read(ontologyPath);
     }
 
     public RDFResource getResource(String IRI)
@@ -32,7 +33,7 @@ public class RDFModel {
             return null;
         }
 
-        RDFResource rdfResource = new RDFResource(resource);
+        RDFResource rdfResource = new RDFResource(resource, ontologyModel);
 
         return rdfResource;
     }
