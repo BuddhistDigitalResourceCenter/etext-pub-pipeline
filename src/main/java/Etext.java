@@ -1,9 +1,8 @@
-import java.io.FileNotFoundException;
+import org.apache.jena.ontology.OntModel;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-import static java.util.stream.Collectors.toList;
 
 class EtextPage {
     int page;
@@ -77,7 +76,36 @@ public class Etext extends BDRCResource {
         if (name != null) {
             sb.append("## ").append(name).append(" {.author}").append("\n\n");
         }
+
+        String metadata = generateMetadataMarkdown();
+        if (metadata != null) {
+            sb.append(metadata).append("\n\n");
+        }
+
         sb.append(content);
+
+        return sb.toString();
+    }
+
+    public String generateMetadataMarkdown()
+    {
+        List<HashMap<String, List<String>>> metadataItems = getMetadata();
+        if (metadataItems.size() == 0) {
+            System.out.println("No metadata");
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("## Metadata").append("\n\n");
+        for (HashMap<String, List<String>> item: metadataItems) {
+            for (String key: item.keySet()) {
+                sb.append("**").append(key).append("**\n");
+                List<String> keyItems = item.get(key);
+                for (String keyItem: keyItems) {
+                    sb.append(keyItem).append("\n");
+                }
+                sb.append("\n");
+            }
+        }
 
         return sb.toString();
     }
@@ -140,6 +168,52 @@ public class Etext extends BDRCResource {
 
         return data;
     }
+
+    private List<HashMap<String, List<String>>> getMetadata()
+    {
+        List<HashMap<String, List<String>>> metadataItems = new ArrayList<>();
+
+        RDFResource work = getWork();
+        if (work != null) {
+            String[] IRIs = {
+                    CORE+"workCatalogInfo"
+            };
+
+            for (String propIRI: IRIs) {
+                List<RDFProperty> props = work.getProperties(propIRI);
+
+                OntModel ontModel = etext.getOntModel();
+                String label = RDFUtil.getOntologyLabel(ontModel, propIRI);
+                List<String> propItems = new ArrayList<>();
+                for (RDFProperty prop: props) {
+                    if (prop.isLiteral()) {
+                        RDFLiteral lit = prop.asLiteral();
+                        propItems.add(lit.getString());
+                    } else {
+                        RDFResource resource = prop.asResource();
+                        for (RDFProperty resProp: resource.getAllProperties()) {
+                            if (resProp.isLiteral()) {
+                                propItems.add(resProp.asLiteral().getString());
+                            } else {
+                                String resPropLabel = resProp.asResource().getString(RDFS+"label");
+                                if (resPropLabel != null) {
+                                    propItems.add(resPropLabel);
+                                }
+                            }
+                        }
+                    }
+                }
+                HashMap<String, List<String>> metadataItem = new HashMap<>();
+                metadataItem.put(label, propItems);
+                metadataItems.add(metadataItem);
+            }
+
+        }
+
+        return metadataItems;
+    }
+
+
     private String getContent()
     {
         return dataSource.loadTextContent(IRI);
