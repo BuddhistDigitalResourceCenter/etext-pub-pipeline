@@ -39,6 +39,51 @@ public class TextTool {
         } else {
             System.out.println("Nothing generated");
         }
+
+        String epubFilepath = generateEpub(dataPath, ensureTrailingSlash(outputDirPath + dirName), markdownFilePath, id);
+        System.out.println("Generated epub: " + epubFilepath);
+    }
+
+    private static String generateEpub(String dataPath, String outputDir, String markdownFilePath, String filename)
+    {
+        String pandocPath = executeCommand("command -v pandoc");
+
+        if (pandocPath == null) return null;
+
+        String epubFilepath = outputDir  + filename + ".epub";
+        String epubCommand = pandocPath + " " +
+                "-f markdown " +
+                "-t epub3 " +
+                "\"" + markdownFilePath + "\" " +
+                "-o \"" + epubFilepath + "\" " +
+                "--toc-depth=6 "
+                ;
+        executeCommand(epubCommand);
+
+        return epubFilepath;
+    }
+
+    private static String executeCommand(String command)
+    {
+        Process proc;
+        String output = null;
+        try {
+            proc = Runtime.getRuntime().exec(new String[] {"bash", "-c", command});
+            BufferedReader stdInput = new BufferedReader(new
+                    InputStreamReader(proc.getInputStream()));
+
+            BufferedReader stdError = new BufferedReader(new
+                    InputStreamReader(proc.getErrorStream()));
+
+            while ((output = stdInput.readLine()) != null) {
+                break;
+            }
+
+        } catch (Exception e) {
+            System.out.println("Exception: " + e.toString());
+        }
+
+        return output;
     }
 
     private static String generateTextMarkdown(String textId, DataSource ds)
