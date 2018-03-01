@@ -1,6 +1,9 @@
 import java.util.ArrayList;
 import java.util.List;
 
+import java.io.InputStream;
+import java.io.FileOutputStream;
+
 public class Item extends BDRCResource {
 
     private RDFResource item;
@@ -10,17 +13,12 @@ public class Item extends BDRCResource {
         super(IRI, dataSource);
 
         item = dataSource.loadResource(IRI);
+        resource = item;
     }
 
     public String generateMarkdown()
     {
         StringBuilder sb = new StringBuilder();
-
-        String title = getTitle();
-        if (title == null) {
-            title = IRI;
-        }
-        sb.append("# ").append(title).append("\n\n");
 
         String author = getAuthor();
         if (author != null) {
@@ -28,9 +26,16 @@ public class Item extends BDRCResource {
         }
 
         List<Etext> etexts = getEtexts();
+        if (etexts.size() > 1) {
+            String title = getTitle();
+            if (title == null) {
+                title = IRI;
+            }
+            sb.append("# ").append(title).append("\n\n");
+        }
         for (Etext etext: etexts) {
-            sb.append("\n\n");
             sb.append(etext.generateMarkdown());
+            sb.append("\n\n");
         }
 
         return sb.toString();
@@ -40,7 +45,9 @@ public class Item extends BDRCResource {
     {
         if (work == null) {
             work = item.getPropertyResource(CORE+"itemForWork");
-            work = dataSource.loadResource(work.getIRI());
+            if (work != null) {
+                work = dataSource.loadResource(work.getIRI());
+            }
         }
 
         return work;

@@ -14,11 +14,17 @@ abstract class BDRCResource {
     protected String IRI;
     protected DataSource dataSource;
     protected RDFResource work;
+    protected RDFResource resource;
 
     public BDRCResource(String IRI, DataSource dataSource)
     {
         this.IRI = IRI;
         this.dataSource = dataSource;
+    }
+
+    protected String getType()
+    {
+        return resource.getTypeIRI();
     }
 
     abstract RDFResource getWork();

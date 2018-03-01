@@ -1,8 +1,15 @@
 import org.apache.jena.ontology.OntModel;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import java.io.InputStream;
+import java.io.FileOutputStream;
+
+
+import io.bdrc.xmltoldmigration.xml2files.TibetanStringChunker;
 
 class EtextPage {
     int page;
@@ -16,6 +23,7 @@ public class Etext extends BDRCResource {
 
     private RDFResource etext;
     private RDFResource item;
+    private static int maxSectionSize = 10000;
 
     public Etext(String IRI, DataSource dataSource)
     {
@@ -26,17 +34,22 @@ public class Etext extends BDRCResource {
         super(IRI, dataSource);
 
         this.etext = dataSource.loadResource(IRI);
+        this.resource = this.etext;
         this.item = item;
     }
 
-    public String generateMarkdown()
+    public String generateMarkdown() {
+        return generateMarkdown(true);
+    }
+
+    public String generateMarkdown(boolean limitSectionSize)
     {
         if (etext == null) {
             return null;
         }
 
         String title = getTitle();
-
+        System.out.println("title: " + title);
         RDFResource author = null;
         author = getMainAuthor();
         String name = null;
@@ -64,6 +77,7 @@ public class Etext extends BDRCResource {
                     }
                     contentSb.appendCodePoint(c);
                 }
+                contentSb.append("\n");
             }
 
             content = contentSb.toString();
@@ -82,7 +96,25 @@ public class Etext extends BDRCResource {
             sb.append(metadata).append("\n\n");
         }
 
-        sb.append(content);
+        if (limitSectionSize) {
+            List<Integer>[] breaks = TibetanStringChunker.getAllBreakingCharsIndexes(content);
+            int prevBreakIndex = 0;
+            int prevIndex = 0;
+            sb.append("\n\n## The Text\n\n");
+            for (final int charBreakIndex : breaks[0]) {
+                if (charBreakIndex - prevBreakIndex > maxSectionSize) {
+//                    String sectionText = content.substring(prevBreakIndex, charBreakIndex);
+                    prevBreakIndex = charBreakIndex;
+                    sb.append("\n\n### {.empty}\n\n");
+                }
+                String breakText = content.substring(prevIndex, charBreakIndex);
+                sb.append(breakText).append("\n");
+                prevIndex = charBreakIndex;
+            }
+        } else {
+            sb.append(content);
+        }
+
 
         return sb.toString();
     }
@@ -91,7 +123,7 @@ public class Etext extends BDRCResource {
     {
         List<HashMap<String, List<String>>> metadataItems = getMetadata();
         if (metadataItems.size() == 0) {
-            System.out.println("No metadata");
+            System.out.println("No metadata for " + IRI);
             return null;
         }
         StringBuilder sb = new StringBuilder();
@@ -110,6 +142,38 @@ public class Etext extends BDRCResource {
         return sb.toString();
     }
 
+    // TODO: use page-break attribute?
+    // See: http://sketchytech.blogspot.co.nz/2017/01/when-is-page-break-not-page-break-epub.html
+    public String getContentWithPages(List<EtextPage> pages) {
+        String content;
+        if (pages.size() > 0) {
+            List<String> contentLines = getContentLines();
+            HashMap<String, EtextPage> pageData = getPageData(pages);
+            int currentLine = 0;
+            StringBuilder contentSb = new StringBuilder();
+            for (String line: contentLines) {
+                currentLine++;
+                int currentChar = 0;
+                for (int c: line.codePoints().toArray()) {
+                    currentChar++;
+                    String key = String.valueOf(currentLine + "_" + currentChar);
+                    if (pageData.containsKey(key)) {
+                        EtextPage page = pageData.get(key);
+                        contentSb.append(" \\[").append(page.page).append("\\] ");
+                    }
+                    contentSb.appendCodePoint(c);
+                }
+                contentSb.append("\n");
+            }
+
+            content = contentSb.toString();
+        } else {
+            content = getContent();
+        }
+
+        return content;
+    }
+
     private RDFResource getItem()
     {
         if (item == null && etext != null) {
@@ -126,7 +190,9 @@ public class Etext extends BDRCResource {
     {
         if (work == null && getItem() != null) {
             work = item.getPropertyResource(CORE+"itemForWork");
-            work = dataSource.loadResource(work.getIRI());
+            if (work != null) {
+                work = dataSource.loadResource(work.getIRI());
+            }
         }
 
         return work;

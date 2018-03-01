@@ -1,4 +1,7 @@
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -9,7 +12,7 @@ public class TextTool {
     public static void main(String[] args)
     {
         if (args.length < 3) {
-            System.out.println("Three arguments are required: data path, text id and output dir");
+            System.out.println("Three arguments are required: data path, text id (leave blank to process every file found) and output dir");
             return;
         }
 
@@ -18,8 +21,44 @@ public class TextTool {
         String outputDirPath = ensureTrailingSlash(args[2]);
         FileDataSource ds = new FileDataSource(dataPath);
         String dirName = getOutputDirName();
-        String markdownFilePath = outputDirPath + dirName + "/" + id + ".md";
 
+        if (id.length() > 0) {
+            // is a file id
+        } else {
+            createEpubsForDirectory(dataPath, outputDirPath + dirName, ds);
+        }
+    }
+
+    private static void createEpubsForDirectory(String sourceDir, String outputDir, FileDataSource ds) {
+        String itemsPath = ensureTrailingSlash(sourceDir) + "items";
+        File[] dirs = new File(itemsPath).listFiles();
+        int count = 0;
+        for (File dir: dirs) {
+            if (dir.isDirectory() && !dir.getName().startsWith(".")) {
+                File[] items = dir.listFiles();
+                for (File item: items) {
+                    if (item.getName().endsWith(".ttl")) {
+                        String id = item.getName().replaceAll("\\.ttl", "");
+                        String markdown = generateMarkdownForResource(id, ds);
+                        String markdownFilePath = outputDir +  "/" + dir.getName() + "/" + id + ".md";
+
+                        if (markdown != null) {
+                            saveStringToFile(markdown, markdownFilePath);
+                            String epubFilepath = generateEpub(sourceDir, outputDir + "/", markdownFilePath, id);
+                        }
+                    }
+                }
+                count++;
+                if (count % 10 == 0) {
+                    break;
+                }
+
+            }
+
+        }
+    }
+
+    private static String generateMarkdownForResource(String id, FileDataSource ds ) {
         String markdown;
         String firstChar = String.valueOf(id.charAt(0));
         switch(firstChar) {
@@ -33,15 +72,19 @@ public class TextTool {
                 markdown = null;
         }
 
-        if (markdown != null) {
-            saveStringToFile(markdown, markdownFilePath);
-            System.out.println("Generated markdown file: " + markdownFilePath);
-        } else {
-            System.out.println("Nothing generated");
-        }
+        return markdown;
+    }
 
-        String epubFilepath = generateEpub(dataPath, ensureTrailingSlash(outputDirPath + dirName), markdownFilePath, id);
-        System.out.println("Generated epub: " + epubFilepath);
+    private static void setupEpubFiles(String dataPath, String outputDir)
+    {
+        dataPath = ensureTrailingSlash(dataPath);
+        Path sourceEpubCss = new File(dataPath + "epub_files/epub.css").toPath();
+        Path targetEpubCss = new File(ensureTrailingSlash(outputDir) + "epub.css").toPath();
+        try {
+            Files.copy(sourceEpubCss, targetEpubCss, StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception e) {
+            System.out.println("Error copying epub css file");
+        }
     }
 
     private static String generateEpub(String dataPath, String outputDir, String markdownFilePath, String filename)
@@ -50,14 +93,21 @@ public class TextTool {
 
         if (pandocPath == null) return null;
 
+        dataPath = ensureTrailingSlash(dataPath);
+        Path sourceEpubCss = new File(dataPath + "epub_files/epub.css").toPath();
+
         String epubFilepath = outputDir  + filename + ".epub";
         String epubCommand = pandocPath + " " +
                 "-f markdown " +
                 "-t epub3 " +
                 "\"" + markdownFilePath + "\" " +
                 "-o \"" + epubFilepath + "\" " +
-                "--toc-depth=6 "
+                "--toc-depth=2 " +
+                "--epub-chapter-level=3 " +
+                "--epub-stylesheet=\""+sourceEpubCss.toString()+"\" " +
+                "--epub-embed-font=\""+dataPath + "epub_files/Jomolhari.ttf"+"\" "
                 ;
+        System.out.println(epubCommand);
         executeCommand(epubCommand);
 
         return epubFilepath;
@@ -99,7 +149,12 @@ public class TextTool {
         String itemIRI = BDR + itemId;
         Item item = new Item(itemIRI, ds);
 
-        return item.generateMarkdown();
+        if (item.getType().equals("http://purl.bdrc.io/ontology/core/ItemEtextPaginated")) {
+            return item.generateMarkdown();
+        } else {
+            return null;
+        }
+
     }
 
     private static boolean saveStringToFile(String text, String filePath)
