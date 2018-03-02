@@ -190,6 +190,9 @@ public class Etext extends BDRCResource {
     {
         if (work == null && getItem() != null) {
             work = item.getPropertyResource(CORE+"itemForWork");
+            if (work == null) {
+                work = item.getPropertyResource(CORE+"itemEtextPaginatedForWork");
+            }
             if (work != null) {
                 work = dataSource.loadResource(work.getIRI());
             }
