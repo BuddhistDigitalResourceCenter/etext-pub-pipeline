@@ -250,6 +250,9 @@ public class Etext extends BDRCResource {
 
             for (String propIRI: IRIs) {
                 List<RDFProperty> props = work.getProperties(propIRI);
+                if (props == null) {
+                    continue;
+                }
 
                 OntModel ontModel = etext.getOntModel();
                 String label = RDFUtil.getOntologyLabel(ontModel, propIRI);
