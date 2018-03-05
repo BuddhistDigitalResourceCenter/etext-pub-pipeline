@@ -72,6 +72,11 @@ abstract class BDRCResource {
                 .filter(n -> n.getTypeIRI().equals(primaryNameIRI))
                 .collect(toList());
 
-        return primaryNames.get(0).getString(RDFS+"label", preferredLanguage);
+        if (primaryNames.size() > 0) {
+            return primaryNames.get(0).getString(RDFS+"label", preferredLanguage);
+        } else {
+            return null;
+        }
+
     }
 }
