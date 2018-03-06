@@ -11,6 +11,8 @@ public class RDFResource implements RDFProperty {
     private Model model;
     private OntModel ontModel;
 
+    private static final String TIBETAN_LANG_CODE = "bo";
+    private static final String WYLIE_LANG_CODE = "bo-x-ewts";
     static final String TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 
     public RDFResource(Resource resource, OntModel ontModel)
@@ -143,7 +145,9 @@ public class RDFResource implements RDFProperty {
             for (RDFProperty prop : properties) {
                 if (prop.isLiteral()) {
                     literal = prop.asLiteral();
-                    if (preferredLanguage == null || literal.language().equals(preferredLanguage)) {
+                    if (preferredLanguage == null
+                        || isPreferredLanguage(literal.language(), preferredLanguage)
+                    ) {
                         return literal.getString();
                     }
                 }
@@ -155,6 +159,17 @@ public class RDFResource implements RDFProperty {
         }
 
         return null;
+    }
+
+    private boolean isPreferredLanguage(String language, String preferredLanguage)
+    {
+        if (language.equals(preferredLanguage)) {
+            return true;
+        } else if (language.equals(WYLIE_LANG_CODE) && preferredLanguage.equals(TIBETAN_LANG_CODE)) {
+            return  true;
+        } else {
+            return false;
+        }
     }
 
     public String getIRI()

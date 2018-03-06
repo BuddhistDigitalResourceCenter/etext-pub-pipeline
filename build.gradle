@@ -16,6 +16,7 @@ dependencies {
     compile 'org.slf4j:slf4j-simple:1.7.25'
     compile 'com.positiondev.epublib:epublib-core:3.1'
     compile 'com.github.BuddhistDigitalResourceCenter:xmltoldmigration:-SNAPSHOT'
+    compile 'io.bdrc.ewtsconverter:ewts-converter:1.3.0'
     compile files(org.gradle.internal.jvm.Jvm.current().toolsJar)
 }
 
