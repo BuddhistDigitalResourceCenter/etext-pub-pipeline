@@ -130,7 +130,8 @@ public class Etext extends BDRCResource {
         sb.append("## Metadata").append("\n\n");
         for (HashMap<String, List<String>> item: metadataItems) {
             for (String key: item.keySet()) {
-                sb.append("**").append(key).append("**\n");
+                String heading = capitalizeFirstLetter(key);
+                sb.append("**").append(heading).append("**\n\n");
                 List<String> keyItems = item.get(key);
                 for (String keyItem: keyItems) {
                     sb.append(keyItem).append("\n");
@@ -140,6 +141,13 @@ public class Etext extends BDRCResource {
         }
 
         return sb.toString();
+    }
+
+    private String capitalizeFirstLetter(String string)
+    {
+        return new StringBuilder().append(string.substring(0, 1).toUpperCase())
+                .append(string.substring(1))
+                .toString();
     }
 
     // TODO: use page-break attribute?
