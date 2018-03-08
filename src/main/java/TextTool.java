@@ -1,10 +1,14 @@
 import java.io.*;
-import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
 
 class EpubRunnable implements Runnable {
     private EpubGenerator epubGenerator;
@@ -19,6 +23,19 @@ class EpubRunnable implements Runnable {
     }
 }
 
+class Args {
+    @Parameter
+    public List<String> parameters = new ArrayList<>();
+
+    @Parameter(names={"--sourceDir", "-s"}, required=true)
+    public String sourceDir;
+
+    @Parameter(names={"--outputDir", "-o"}, required=true)
+    public String outputDir;
+
+    @Parameter(names={"--itemId", "-id"})
+    public String itemId;
+}
 
 public class TextTool {
 
@@ -26,18 +43,19 @@ public class TextTool {
 
     public static void main(String[] args)
     {
-        if (args.length < 3) {
-            System.out.println("Three arguments are required: data path, text id (leave blank to process every file found) and output dir");
-            return;
-        }
+        Args commandArgs = new Args();
+        JCommander.newBuilder()
+                .addObject(commandArgs)
+                .build()
+                .parse(args);
 
-        String dataPath = ensureTrailingSlash(args[0]);
-        String id = args[1];
-        String outputDirPath = ensureTrailingSlash(args[2]);
+        String dataPath = ensureTrailingSlash(commandArgs.sourceDir);
+        String outputDirPath = commandArgs.outputDir;
         String dirName = getOutputDirName();
+        String itemId = commandArgs.itemId;
 
-        if (id.length() > 0) {
-            // is a file id
+        if (itemId != null && itemId.length() > 0) {
+            // just process the given item
         } else {
             createEpubsForDirectory(dataPath, outputDirPath + dirName);
         }
