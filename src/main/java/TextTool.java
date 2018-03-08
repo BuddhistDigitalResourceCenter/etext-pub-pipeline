@@ -1,4 +1,6 @@
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -9,6 +11,8 @@ import java.util.concurrent.TimeUnit;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
+import org.apache.jena.base.Sys;
 
 class EpubRunnable implements Runnable {
     private EpubGenerator epubGenerator;
@@ -27,14 +31,17 @@ class Args {
     @Parameter
     public List<String> parameters = new ArrayList<>();
 
-    @Parameter(names={"--sourceDir", "-s"}, required=true)
+    @Parameter(names={"--sourceDir", "-s"}, order = 0, required = true, description = "The directory that contains the directories containing the .ttl files. (required)")
     public String sourceDir;
 
-    @Parameter(names={"--outputDir", "-o"}, required=true)
+    @Parameter(names={"--outputDir", "-o"}, order = 1, required = true, description = "The directory where the generated files will be saved. (required)")
     public String outputDir;
 
-    @Parameter(names={"--itemId", "-id"})
+    @Parameter(names={"--itemId", "-id"}, order = 2, description = "If supplied, only the item with this id will be processed.")
     public String itemId;
+
+    @Parameter(names={"--help", "-h"}, order = 3, help = true, description = "Display the usage information.")
+    public boolean help;
 }
 
 public class TextTool {
@@ -44,15 +51,35 @@ public class TextTool {
     public static void main(String[] args)
     {
         Args commandArgs = new Args();
-        JCommander.newBuilder()
+        JCommander jcommander = JCommander.newBuilder()
                 .addObject(commandArgs)
-                .build()
-                .parse(args);
+                .build();
+        try {
+            jcommander.parse(args);
+        } catch (ParameterException e) {
+            System.out.println(e.getMessage());
+            jcommander.usage();
+            return;
+        }
+
+        if (commandArgs.help) {
+            jcommander.usage();
+            return;
+        }
 
         String dataPath = ensureTrailingSlash(commandArgs.sourceDir);
         String outputDirPath = commandArgs.outputDir;
         String dirName = getOutputDirName();
         String itemId = commandArgs.itemId;
+
+        if (!(new File(dataPath).exists())) {
+            System.out.println("Error: Supplied source directory does not exist");
+            return;
+        }
+        if (!(new File(outputDirPath).exists())) {
+            System.out.println("Error: Supplied output directory does not exist");
+            return;
+        }
 
         if (itemId != null && itemId.length() > 0) {
             // just process the given item
