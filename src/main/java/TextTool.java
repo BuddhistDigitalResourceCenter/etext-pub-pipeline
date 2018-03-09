@@ -34,13 +34,16 @@ class Args {
     @Parameter(names={"--sourceDir", "-s"}, order = 0, required = true, description = "The directory that contains the directories containing the .ttl files. (required)")
     public String sourceDir;
 
-    @Parameter(names={"--outputDir", "-o"}, order = 1, required = true, description = "The directory where the generated files will be saved. (required)")
+    @Parameter(names={"--outputDir", "-o"}, order = 1, description = "The directory where the generated files will be saved. Defaults to ./output")
     public String outputDir;
 
-    @Parameter(names={"--itemId", "-id"}, order = 2, description = "If supplied, only the item with this id will be processed.")
+    @Parameter(names={"--epubFiles", "-ef"}, order = 2, description = "The directory that contains files used for the epub. Defaults to ./epub_files")
+    public String epubFiles;
+
+    @Parameter(names={"--itemId", "-id"}, order = 3, description = "If supplied, only the item with this id will be processed.")
     public String itemId;
 
-    @Parameter(names={"--help", "-h"}, order = 3, help = true, description = "Display the usage information.")
+    @Parameter(names={"--help", "-h"}, order = 4, help = true, description = "Display the usage information.")
     public boolean help;
 }
 
@@ -67,28 +70,35 @@ public class TextTool {
             return;
         }
 
+        String workingDir = ensureTrailingSlash(System.getProperty("user.dir"));
         String dataPath = ensureTrailingSlash(commandArgs.sourceDir);
-        String outputDirPath = commandArgs.outputDir;
-        String dirName = getOutputDirName();
-        String itemId = commandArgs.itemId;
-
         if (!(new File(dataPath).exists())) {
-            System.out.println("Error: Supplied source directory does not exist");
+            System.out.println("Error: Supplied source directory does not exist - " + dataPath);
             return;
         }
-        if (!(new File(outputDirPath).exists())) {
-            System.out.println("Error: Supplied output directory does not exist");
-            return;
+        String outputDirPath = workingDir + "output/";
+        if (commandArgs.outputDir != null) {
+            if (!(new File(commandArgs.outputDir).exists())) {
+                System.out.println("Error: Supplied output directory does not exist");
+                return;
+            }
+            outputDirPath = commandArgs.outputDir;
         }
+        outputDirPath = ensureTrailingSlash(outputDirPath) + getOutputDirName();
+        String epubFilesDir = workingDir + "epub_files";
+        if (commandArgs.epubFiles != null) {
+            epubFilesDir = ensureTrailingSlash(commandArgs.epubFiles) + "epub_files";
+        }
+        String itemId = commandArgs.itemId;
 
         if (itemId != null && itemId.length() > 0) {
             // just process the given item
         } else {
-            createEpubsForDirectory(dataPath, outputDirPath + dirName);
+            createEpubsForDirectory(dataPath, outputDirPath, epubFilesDir);
         }
     }
 
-    private static void createEpubsForDirectory(String sourceDir, String outputDir)
+    private static void createEpubsForDirectory(String sourceDir, String outputDir, String epubFilesDir)
     {
         ExecutorService executor = Executors.newFixedThreadPool(NTHREADS);
 
@@ -102,7 +112,7 @@ public class TextTool {
                     if (item.getName().endsWith(".ttl")) {
 
                         String id = item.getName().replaceAll("\\.ttl", "");
-                        EpubGenerator epubGenerator = new EpubGenerator(id, sourceDir, outputDir, dir);
+                        EpubGenerator epubGenerator = new EpubGenerator(id, sourceDir, outputDir, epubFilesDir);
                         EpubRunnable runnable = new EpubRunnable(epubGenerator);
                         executor.execute(runnable);
                     }

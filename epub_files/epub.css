@@ -1,0 +1,48 @@
+@font-face {
+    font-family: Jomolhari;
+    font-style: normal;
+    font-weight: normal;
+    src:url("Jomolhari.ttf");
+}
+
+body {
+    margin: 5%;
+    text-align: left;
+    font-family: Jomolhari, serif;
+}
+
+section.empty h3 {
+    display: none;
+}
+section.empty h3 + p {
+    padding-top: 0;
+    margin-top: 0;
+}
+
+p {
+    font-family: Jomolhari, serif;
+}
+
+.origPageNum {
+    font-size: 70%;
+    font-family: sans-serif;
+    vertical-align: super;
+}
+
+/* Pandoc default styles */
+code { font-family: monospace; }
+h1 { text-align: left; }
+h2 { text-align: left; }
+h3 { text-align: left; }
+h4 { text-align: left; }
+h5 { text-align: left; }
+h6 { text-align: left; }
+h1.title { }
+h2.author { }
+h3.date { }
+ol.toc { padding: 0; margin-left: 1em; }
+ol.toc li { list-style-type: none; margin: 0; padding: 0; }
+a.footnoteRef { vertical-align: super; }
+em, em em em, em em em em em { font-style: italic;}
+em em, em em em em { font-style: normal; }
+

@@ -12,24 +12,24 @@ public class EpubGenerator {
     private final String sourceDir;
     private final String outputDir;
     private final FileDataSource ds;
-    private final File dir;
+    private final String epubFilesDir;
 
-    EpubGenerator(String id, String sourceDir, String outputDir, File dir) {
+    EpubGenerator(String id, String sourceDir, String outputDir, String epubFilesDir) {
         this.id = id;
-        this.sourceDir = sourceDir;
-        this.outputDir = outputDir;
-        this.ds = new FileDataSource(sourceDir);
-        this.dir = dir;
+        this.sourceDir = ensureTrailingSlash(sourceDir);
+        this.outputDir = ensureTrailingSlash(outputDir);
+        this.ds = new FileDataSource(this.sourceDir);
+        this.epubFilesDir = ensureTrailingSlash(epubFilesDir);
     }
 
     public void generateEpub()
     {
         String markdown = generateMarkdownForResource(id, ds);
-        String markdownFilePath = outputDir +  "/" + dir.getName() + "/" + id + ".md";
+        String markdownFilePath = outputDir + "markdown/" + id + ".md";
 
         if (markdown != null) {
             saveStringToFile(markdown, markdownFilePath);
-            String epubCommand = generateEpubCommand(sourceDir, outputDir + "/", markdownFilePath, id);
+            String epubCommand = generateEpubCommand(sourceDir, outputDir, markdownFilePath, id);
             executeCommand(epubCommand);
         }
     }
@@ -108,7 +108,7 @@ public class EpubGenerator {
         if (pandocPath == null) return null;
 
         dataPath = ensureTrailingSlash(dataPath);
-        Path sourceEpubCss = new File(dataPath + "epub_files/epub.css").toPath();
+        Path sourceEpubCss = new File(epubFilesDir + "epub.css").toPath();
 
         String epubFilepath = outputDir  + filename + ".epub";
         String epubCommand = pandocPath + " " +
