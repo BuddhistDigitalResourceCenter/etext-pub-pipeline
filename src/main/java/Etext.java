@@ -1,15 +1,9 @@
 import org.apache.jena.ontology.OntModel;
 
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import java.io.InputStream;
-import java.io.FileOutputStream;
-
-
-import io.bdrc.xmltoldmigration.xml2files.TibetanStringChunker;
 
 class EtextPage {
     int page;
