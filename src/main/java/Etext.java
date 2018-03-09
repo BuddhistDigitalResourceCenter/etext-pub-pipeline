@@ -57,34 +57,6 @@ public class Etext extends BDRCResource {
             name = getPrimaryName(author, PREFERRED_LANGUAGE);
         }
 
-        String content;
-
-        List<EtextPage> pages = getPages();
-        if (pages.size() > 0) {
-            List<String> contentLines = getContentLines();
-            HashMap<String, EtextPage> pageData = getPageData(pages);
-            int currentLine = 0;
-            StringBuilder contentSb = new StringBuilder();
-            for (String line: contentLines) {
-                currentLine++;
-                int currentChar = 0;
-                for (int c: line.codePoints().toArray()) {
-                    currentChar++;
-                    String key = String.valueOf(currentLine + "_" + currentChar);
-                    if (pageData.containsKey(key)) {
-                        EtextPage page = pageData.get(key);
-                        contentSb.append(" \\[").append(page.page).append("\\] ");
-                    }
-                    contentSb.appendCodePoint(c);
-                }
-                contentSb.append("\n");
-            }
-
-            content = contentSb.toString();
-        } else {
-            content = getContent();
-        }
-
         StringBuilder sb = new StringBuilder();
         sb.append("# ").append(title).append("\n\n");
         if (name != null) {
@@ -96,25 +68,26 @@ public class Etext extends BDRCResource {
             sb.append(metadata).append("\n\n");
         }
 
-        if (limitSectionSize) {
-            List<Integer>[] breaks = TibetanStringChunker.getAllBreakingCharsIndexes(content);
-            int prevBreakIndex = 0;
-            int prevIndex = 0;
-            sb.append("\n\n## The Text\n\n");
-            for (final int charBreakIndex : breaks[0]) {
-                if (charBreakIndex - prevBreakIndex > maxSectionSize) {
-//                    String sectionText = content.substring(prevBreakIndex, charBreakIndex);
-                    prevBreakIndex = charBreakIndex;
-                    sb.append("\n\n### {.empty}\n\n");
-                }
-                String breakText = content.substring(prevIndex, charBreakIndex);
-                sb.append(breakText).append("\n");
-                prevIndex = charBreakIndex;
-            }
-        } else {
-            sb.append(content);
+        List<String> contentLines = getContentLines();
+        List<EtextPage> pages = getPages();
+        if (pages.size() > 0) {
+            contentLines = getContentLinesWithPages(contentLines, pages);
         }
 
+        if (limitSectionSize) {
+            sb.append("\n\n## The Text\n\n");
+            int sectionLength = 0;
+            for (String line: contentLines) {
+                if (sectionLength > maxSectionSize) {
+                    sectionLength = 0;
+                    sb.append("\n\n### {.empty}\n\n");
+                }
+                sb.append(line).append("\n");
+                sectionLength += line.length();
+            }
+        } else {
+            sb.append(String.join("\n", contentLines));
+        }
 
         return sb.toString();
     }
@@ -152,34 +125,28 @@ public class Etext extends BDRCResource {
 
     // TODO: use page-break attribute?
     // See: http://sketchytech.blogspot.co.nz/2017/01/when-is-page-break-not-page-break-epub.html
-    public String getContentWithPages(List<EtextPage> pages) {
-        String content;
-        if (pages.size() > 0) {
-            List<String> contentLines = getContentLines();
-            HashMap<String, EtextPage> pageData = getPageData(pages);
-            int currentLine = 0;
-            StringBuilder contentSb = new StringBuilder();
-            for (String line: contentLines) {
-                currentLine++;
-                int currentChar = 0;
-                for (int c: line.codePoints().toArray()) {
-                    currentChar++;
-                    String key = String.valueOf(currentLine + "_" + currentChar);
-                    if (pageData.containsKey(key)) {
-                        EtextPage page = pageData.get(key);
-                        contentSb.append(" \\[").append(page.page).append("\\] ");
-                    }
-                    contentSb.appendCodePoint(c);
+    private List<String> getContentLinesWithPages(List<String>contentLines, List<EtextPage> pages)
+    {
+        List<String> contentPagedLines = new ArrayList<>();
+        HashMap<String, EtextPage> pageData = getPageData(pages);
+        int currentLine = 0;
+        for (String line: contentLines) {
+            StringBuilder lineSb = new StringBuilder();
+            currentLine++;
+            int currentChar = 0;
+            for (int c: line.codePoints().toArray()) {
+                currentChar++;
+                String key = String.valueOf(currentLine + "_" + currentChar);
+                if (pageData.containsKey(key)) {
+                    EtextPage page = pageData.get(key);
+                    lineSb.append(" [\\[").append(page.page).append("\\]]{.origPageNum} ");
                 }
-                contentSb.append("\n");
+                lineSb.appendCodePoint(c);
             }
-
-            content = contentSb.toString();
-        } else {
-            content = getContent();
+            contentPagedLines.add(lineSb.toString());
         }
 
-        return content;
+        return contentPagedLines;
     }
 
     private RDFResource getItem()
