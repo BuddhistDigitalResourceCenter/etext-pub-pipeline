@@ -43,7 +43,6 @@ public class Etext extends BDRCResource {
         }
 
         String title = getTitle();
-        System.out.println("title: " + title);
         RDFResource author = null;
         author = getMainAuthor();
         String name = null;

@@ -121,7 +121,6 @@ public class EpubGenerator {
                 "--epub-stylesheet=\""+sourceEpubCss.toString()+"\" " +
                 "--epub-embed-font=\""+dataPath + "epub_files/Jomolhari.ttf"+"\" "
                 ;
-        System.out.println(epubCommand);
 
         return epubCommand;
     }
