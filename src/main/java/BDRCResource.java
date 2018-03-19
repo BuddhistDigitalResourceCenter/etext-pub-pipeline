@@ -1,3 +1,6 @@
+import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -13,7 +16,7 @@ abstract class BDRCResource {
 
     protected String IRI;
     protected DataSource dataSource;
-    protected RDFResource work;
+    protected Work work;
     protected RDFResource resource;
 
     public BDRCResource(String IRI, DataSource dataSource)
@@ -27,7 +30,7 @@ abstract class BDRCResource {
         return resource.getTypeIRI();
     }
 
-    abstract RDFResource getWork();
+    abstract Work getWork();
 
     abstract String getTitle();
 
@@ -43,28 +46,23 @@ abstract class BDRCResource {
 
     protected RDFResource getMainAuthor()
     {
-        RDFResource work = getWork();
+        Work work = getWork();
         if (work == null) return null;
 
-        RDFResource author = work.getPropertyResource(CORE+"creatorMainAuthor");
-        if (author != null) {
-            try {
-                author = dataSource.loadResource(author.getIRI());
-            } catch (Exception e) {
-                author = null;
-            }
-        }
-
-        return author;
+        return work.getMainAuthor();
     }
 
     protected List<RDFResource> getAuthorNames(RDFResource author)
     {
+        if (author == null) return null;
+
         return author.getPropertyResources(CORE+"personName");
     }
 
     protected String getPrimaryName(RDFResource author, String preferredLanguage)
     {
+        if (author == null) return null;
+
         List<RDFResource> authorNames = getAuthorNames(author);
         String primaryNameIRI = CORE+"PersonPrimaryName";
         List<RDFResource> primaryNames = authorNames
@@ -77,6 +75,16 @@ abstract class BDRCResource {
         } else {
             return null;
         }
+    }
 
+    public String getId()
+    {
+        URI uri = URI.create(IRI);
+        Path iriPath = Paths.get(uri.getPath());
+        Path lastSegment = iriPath.getName(iriPath.getNameCount() - 1);
+        String id = lastSegment
+                        .toString()
+                        .replaceAll("\\.ttl", "");
+        return id;
     }
 }

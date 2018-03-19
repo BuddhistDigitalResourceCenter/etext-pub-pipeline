@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -19,6 +20,7 @@ class EpubRunnable implements Runnable {
 
     EpubRunnable(EpubGenerator epubGenerator) {
         this.epubGenerator = epubGenerator;
+
     }
 
     @Override
@@ -43,13 +45,19 @@ class Args {
     @Parameter(names={"--itemId", "-id"}, order = 3, description = "If supplied, only the item with this id will be processed.")
     public String itemId;
 
-    @Parameter(names={"--help", "-h"}, order = 4, help = true, description = "Display the usage information.")
+    @Parameter(names={"--titleAsFilename", "-t"}, order = 4, description = "Use the text title as the filename. Otherwise, the text's ID is used.")
+    public boolean titleAsFilename;
+
+    @Parameter(names={"--help", "-h"}, order = 5, help = true, description = "Display the usage information.")
     public boolean help;
 }
 
 public class TextTool {
 
-    private static final int NTHREADS = 8;
+    private static int threadCount = 4;
+    private static final String ETEXT_TYPE = "ItemEtextPaginated";
+    private static final String ETEXT_PREFIX = "E";
+    private static boolean titleAsFilename = false;
 
     public static void main(String[] args)
     {
@@ -69,6 +77,11 @@ public class TextTool {
             jcommander.usage();
             return;
         }
+
+        titleAsFilename = commandArgs.titleAsFilename;
+
+        int processors = Runtime.getRuntime().availableProcessors();
+        threadCount = (processors > 1) ? processors - 1 : 1;
 
         String workingDir = ensureTrailingSlash(System.getProperty("user.dir"));
         String dataPath = ensureTrailingSlash(commandArgs.sourceDir);
@@ -93,6 +106,7 @@ public class TextTool {
 
         if (itemId != null && itemId.length() > 0) {
             // just process the given item
+            processResource(itemId, dataPath, outputDirPath, epubFilesDir, null);
         } else {
             createEpubsForDirectory(dataPath, outputDirPath, epubFilesDir);
         }
@@ -100,30 +114,29 @@ public class TextTool {
 
     private static void createEpubsForDirectory(String sourceDir, String outputDir, String epubFilesDir)
     {
-        ExecutorService executor = Executors.newFixedThreadPool(NTHREADS);
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
 
         String itemsPath = ensureTrailingSlash(sourceDir) + "items";
         File[] dirs = new File(itemsPath).listFiles();
-        int count = 0;
+        List<String> etextItemPaths = new ArrayList<>();
         for (File dir: dirs) {
             if (dir.isDirectory() && !dir.getName().startsWith(".")) {
                 File[] items = dir.listFiles();
                 for (File item: items) {
                     if (item.getName().endsWith(".ttl")) {
-
                         String id = item.getName().replaceAll("\\.ttl", "");
-                        EpubGenerator epubGenerator = new EpubGenerator(id, sourceDir, outputDir, epubFilesDir);
-                        EpubRunnable runnable = new EpubRunnable(epubGenerator);
-                        executor.execute(runnable);
+                        String kind = id.split("_")[1].substring(0, 1);
+
+                        // Only process files that are etexts
+                        if (!kind.equals(ETEXT_PREFIX)) {
+                            continue;
+                        }
+
+                        etextItemPaths.add(item.getAbsolutePath());
+                        processResource(id, sourceDir, outputDir, epubFilesDir, executor);
                     }
                 }
-                count++;
-                if (count % 10 == 0) {
-                    break;
-                }
-
             }
-
         }
 
         executor.shutdown();
@@ -132,6 +145,37 @@ public class TextTool {
         } catch (InterruptedException e) {
             System.out.println("Interrupted epub generation");
         }
+    }
+
+    private static void processResource(String id, String sourceDir, String outputDir, String epubFilesDir, ExecutorService executor)
+    {
+        EpubGenerator epubGenerator = new EpubGenerator(id, sourceDir, outputDir, epubFilesDir, titleAsFilename);
+        if (executor == null) {
+            epubGenerator.generateEpub();
+        } else {
+            EpubRunnable runnable = new EpubRunnable(epubGenerator);
+            executor.execute(runnable);
+        }
+    }
+
+    private static boolean fileContainsString(String filepath, String string)
+    {
+        File file = new File(filepath);
+        boolean containsString = false;
+        try {
+            Scanner scanner = new Scanner(file);
+            while(scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                if (line.contains(string)) {
+                    containsString = true;
+                    break;
+                }
+            }
+        } catch(Exception e) {
+            System.out.println("Error searching file for string: " + filepath);
+        }
+
+        return containsString;
     }
 
     private static String ensureTrailingSlash(String path)

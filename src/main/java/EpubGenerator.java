@@ -3,53 +3,64 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 public class EpubGenerator {
 
-    private static final String BDR = "http://purl.bdrc.io/resource/";
+    public static final String BDR = "http://purl.bdrc.io/resource/";
 
     private final String id;
     private final String sourceDir;
     private final String outputDir;
     private final FileDataSource ds;
     private final String epubFilesDir;
+    private static String pandocPath;
+    private final boolean titleAsFilename;
 
-    EpubGenerator(String id, String sourceDir, String outputDir, String epubFilesDir) {
+    EpubGenerator(String id, String sourceDir, String outputDir, String epubFilesDir, boolean titleAsFilename) {
         this.id = id;
         this.sourceDir = ensureTrailingSlash(sourceDir);
         this.outputDir = ensureTrailingSlash(outputDir);
         this.ds = new FileDataSource(this.sourceDir);
         this.epubFilesDir = ensureTrailingSlash(epubFilesDir);
+        this.titleAsFilename = titleAsFilename;
     }
 
     public void generateEpub()
     {
-        String markdown = generateMarkdownForResource(id, ds);
-        String markdownFilePath = outputDir + "markdown/" + id + ".md";
+        List<MarkdownDocument> markdownDocuments = generateMarkdownForResource(id, ds);
 
-        if (markdown != null) {
-            saveStringToFile(markdown, markdownFilePath);
-            String epubCommand = generateEpubCommand(sourceDir, outputDir, markdownFilePath, id);
-            executeCommand(epubCommand);
+        if (markdownDocuments != null) {
+            for (MarkdownDocument markdownDocument: markdownDocuments) {
+                String markdownFilePath = outputDir + "markdown/" + markdownDocument.name + ".md";
+                saveStringToFile(markdownDocument.markdown, markdownFilePath);
+                String epubCommand = generateEpubCommand(sourceDir, outputDir, markdownFilePath, markdownDocument.name);
+                executeCommand(epubCommand);
+            }
         }
     }
 
-    private String generateMarkdownForResource(String id, FileDataSource ds )
+    private List<MarkdownDocument> generateMarkdownForResource(String id, FileDataSource ds )
     {
-        String markdown;
+        List<MarkdownDocument> markdownDocuments;
         String firstChar = String.valueOf(id.charAt(0));
         switch(firstChar) {
             case "I":
-                markdown = generateItemMarkdown(id, ds);
+                markdownDocuments = generateItemMarkdown(id, ds);
                 break;
             case "U":
-                markdown = generateTextMarkdown(id, ds);
+                String markdown = generateTextMarkdown(id, ds);
+                MarkdownDocument markdownDocument = new MarkdownDocument(markdown, id);
+                markdownDocuments = new ArrayList<>();
+                markdownDocuments.add(markdownDocument);
                 break;
             default:
-                markdown = null;
+                System.out.println("Passed unknown resource type: " + firstChar);
+                markdownDocuments = null;
         }
 
-        return markdown;
+        return markdownDocuments;
     }
 
     private String generateTextMarkdown(String textId, DataSource ds)
@@ -60,13 +71,13 @@ public class EpubGenerator {
         return etext.generateMarkdown();
     }
 
-    private String generateItemMarkdown(String itemId, DataSource ds)
+    private List<MarkdownDocument> generateItemMarkdown(String itemId, DataSource ds)
     {
         String itemIRI = BDR + itemId;
         Item item = new Item(itemIRI, ds);
 
         if (item.getType().equals("http://purl.bdrc.io/ontology/core/ItemEtextPaginated")) {
-            return item.generateMarkdown();
+            return item.generateMarkdown(titleAsFilename);
         } else {
             return null;
         }
@@ -101,9 +112,18 @@ public class EpubGenerator {
         return true;
     }
 
+    private String getPandocPath()
+    {
+        if (pandocPath == null) {
+            pandocPath = executeCommand("command -v pandoc");
+        }
+
+        return pandocPath;
+    }
+
     private String generateEpubCommand(String dataPath, String outputDir, String markdownFilePath, String filename)
     {
-        String pandocPath = executeCommand("command -v pandoc");
+        String pandocPath = getPandocPath();
 
         if (pandocPath == null) return null;
 
@@ -140,7 +160,6 @@ public class EpubGenerator {
             while ((output = stdInput.readLine()) != null) {
                 break;
             }
-
         } catch (Exception e) {
             System.out.println("Exception: " + e.toString());
         }

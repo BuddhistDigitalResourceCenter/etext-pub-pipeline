@@ -1,8 +1,11 @@
+import nl.siegmann.epublib.domain.*;
+import nl.siegmann.epublib.service.MediatypeService;
 import org.apache.jena.ontology.OntModel;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 class EtextPage {
@@ -63,7 +66,7 @@ public class Etext extends BDRCResource {
 
         List<String> contentLines = getContentLines();
         List<EtextPage> pages = getPages();
-        if (pages.size() > 0) {
+        if (pages != null && pages.size() > 0) {
             contentLines = getContentLinesWithPages(contentLines, pages);
         }
 
@@ -142,6 +145,41 @@ public class Etext extends BDRCResource {
         return contentPagedLines;
     }
 
+    public Map<Integer, String> getPageContent()
+    {
+        List<EtextPage> pages = getPages();
+        if (pages == null) return null;
+
+        HashMap<String, EtextPage> pageData = getPageData(pages);
+
+        HashMap<Integer, String> pageContent = new HashMap<>();
+        List<String> contentLines = getContentLines();
+        int currentLine = 0;
+        int currentPage = 0;
+        StringBuilder currentPageData = new StringBuilder();
+        for (String line: contentLines) {
+            currentLine++;
+            int currentChar = 0;
+            for (int c: line.codePoints().toArray()) {
+                currentChar++;
+                String key = String.valueOf(currentLine + "_" + currentChar);
+                if (pageData.containsKey(key)) {
+                    EtextPage page = pageData.get(key);
+
+                    pageContent.put(currentPage, currentPageData.toString());
+
+                    currentPageData = new StringBuilder();
+                    currentPage = page.page;
+                }
+                currentPageData.appendCodePoint(c);
+            }
+
+            currentPageData.append("\n");
+        }
+
+        return pageContent;
+    }
+
     private RDFResource getItem()
     {
         if (item == null && etext != null) {
@@ -154,15 +192,16 @@ public class Etext extends BDRCResource {
         return item;
     }
 
-    protected RDFResource getWork()
+    protected Work getWork()
     {
         if (work == null && getItem() != null) {
-            work = item.getPropertyResource(CORE+"itemForWork");
-            if (work == null) {
-                work = item.getPropertyResource(CORE+"itemEtextPaginatedForWork");
+            RDFResource workResource = item.getPropertyResource(CORE+"itemForWork");
+            if (workResource == null) {
+                workResource = item.getPropertyResource(CORE+"itemEtextPaginatedForWork");
             }
-            if (work != null) {
-                work = dataSource.loadResource(work.getIRI());
+            if (workResource != null) {
+                workResource = dataSource.loadResource(workResource.getIRI());
+                work = new Work(workResource, dataSource);
             }
         }
 
@@ -183,13 +222,18 @@ public class Etext extends BDRCResource {
 
         for(RDFResource page: pages) {
             EtextPage etextPage = new EtextPage();
-            etextPage.page = page.getInteger(CORE+"seqNum");
-            etextPage.startChar = page.getInteger(CORE+"sliceStartChar");
-            etextPage.startLine = page.getInteger(CORE+"sliceStartChunk");
-            etextPage.endChar = page.getInteger(CORE+"sliceEndChar");
-            etextPage.endLine = page.getInteger(CORE+"sliceEndChunk");
+            try {
+                etextPage.page = page.getInteger(CORE + "seqNum");
+                etextPage.startChar = page.getInteger(CORE + "sliceStartChar");
+                etextPage.startLine = page.getInteger(CORE + "sliceStartChunk");
+                etextPage.endChar = page.getInteger(CORE + "sliceEndChar");
+                etextPage.endLine = page.getInteger(CORE + "sliceEndChunk");
+                etextPages.add(etextPage);
+            } catch (Exception e) {
+                System.out.println("Exception getting page for " + etext.getIRI());
+                return null;
+            }
 
-            etextPages.add(etextPage);
         }
 
         return etextPages;
@@ -210,15 +254,16 @@ public class Etext extends BDRCResource {
     {
         List<HashMap<String, List<String>>> metadataItems = new ArrayList<>();
 
-        RDFResource work = getWork();
+        Work work = getWork();
         if (work != null) {
             String[] IRIs = {
                     CORE+"workCatalogInfo"
             };
 
             for (String propIRI: IRIs) {
-                List<RDFProperty> props = work.getProperties(propIRI);
+                List<RDFProperty> props = work.resource.getProperties(propIRI);
                 if (props == null) {
+                    System.out.println("No workCatalogInfo for work: " + work.resource.getIRI());
                     continue;
                 }
 
@@ -259,7 +304,7 @@ public class Etext extends BDRCResource {
         return dataSource.loadTextContent(IRI);
     }
 
-    private List<String> getContentLines()
+    protected List<String> getContentLines()
     {
         return dataSource.loadTextContentLines(IRI);
     }

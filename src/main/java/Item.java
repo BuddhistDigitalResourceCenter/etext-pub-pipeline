@@ -1,12 +1,21 @@
-import java.util.ArrayList;
-import java.util.List;
+import org.apache.jena.base.Sys;
 
-import java.io.InputStream;
-import java.io.FileOutputStream;
+import java.util.*;
+
+class MarkdownDocument {
+    MarkdownDocument(String markdown, String name)
+    {
+        this.markdown = markdown;
+        this.name = name;
+    }
+    String markdown;
+    String name;
+}
 
 public class Item extends BDRCResource {
 
     private RDFResource item;
+    private static int maxSectionSize = 10000;
 
     public Item(String IRI, DataSource dataSource)
     {
@@ -16,91 +25,176 @@ public class Item extends BDRCResource {
         resource = item;
     }
 
-    public String generateMarkdown()
+    public List<MarkdownDocument> generateMarkdown(boolean titleAsFilename)
     {
-        StringBuilder sb = new StringBuilder();
+        List<MarkdownDocument> markdownDocuments = new ArrayList<>();
+        Map<Integer, List<WorkSection>> volumeSections = new HashMap<>();
 
-        String author = getAuthor();
-        if (author != null) {
-            sb.append("## ").append(author).append(" {.author}").append("\n\n");
+        Map<Integer, Etext> etexts = getEtexts();
+        Work work = getWork();
+        Map<Integer, List<Work>> workParts = null;
+        if (work != null ) {
+            workParts = work.getWorkParts();
         }
 
-        List<Etext> etexts = getEtexts();
-        if (etexts.size() > 1) {
-            String title = getTitle();
-            if (title == null) {
-                title = IRI;
+        int totalVolumes = etexts.keySet().size();
+        for (Map.Entry<Integer, Etext> entry : etexts.entrySet()) {
+            Etext etext = entry.getValue();
+            Integer volumeNumber = entry.getKey();
+            List<WorkSection> sections;
+
+            if (work != null && workParts.size() > 0) {
+                sections = work.getSections(etext, volumeNumber);
+            } else {
+                sections = new ArrayList<>();
+
+                WorkSection section = new WorkSection();
+                section.title = "The Text";
+                section.content = String.join("\n", etext.getContentLines());
+                sections.add(section);
             }
-            sb.append("# ").append(title).append("\n\n");
-        }
-        for (Etext etext: etexts) {
-            sb.append(etext.generateMarkdown());
-            sb.append("\n\n");
+
+            volumeSections.put(volumeNumber, sections);
         }
 
-        return sb.toString();
+        for (Map.Entry<Integer, List<WorkSection>> entry : volumeSections.entrySet()) {
+            int volume = entry.getKey();
+            List<WorkSection> sections = entry.getValue();
+
+            StringBuilder docSb = new StringBuilder();
+
+            docSb.append("# ")
+                    .append(getTitle())
+                    .append("\n\n");
+
+            if (totalVolumes > 1) {
+                docSb.append("[Volume ")
+                    .append(volume)
+                    .append("]{.volume}")
+                    .append("\n\n");
+            }
+
+            for (WorkSection workSection: sections) {
+                docSb.append(markdownForSection(workSection, 2));
+            }
+
+            String textName = getId();
+            if (titleAsFilename) {
+                textName = getTitle();
+            }
+            if (totalVolumes > 1) textName += "_vol_" + volume;
+            MarkdownDocument document = new MarkdownDocument(docSb.toString(), textName);
+            markdownDocuments.add(document);
+        }
+
+        return markdownDocuments;
     }
 
-    protected RDFResource getWork()
+    public String markdownForSection(WorkSection section, int level) {
+        String headingBase = "";
+        for (int i=1; i < level; i++) {
+            headingBase += "#";
+        }
+
+        StringBuilder sectionSb = new StringBuilder();
+
+        if (section.title != null) {
+            sectionSb.append(headingBase)
+                    .append("# ")
+                    .append(section.title)
+                    .append("\n\n");
+        }
+
+        if (section.author != null) {
+            sectionSb.append("[")
+                    .append(section.author)
+                    .append("]{.author}")
+                    .append("\n\n");
+        }
+
+        if (section.sections != null && section.sections.size() > 0) {
+            for (WorkSection workSection: section.sections) {
+                sectionSb.append(markdownForSection(workSection, level + 1));
+            }
+            sectionSb.append("\n\n");
+        } else {
+            String content = splitMarkdownText(section.content, maxSectionSize);
+            sectionSb.append(content).append("\n\n");
+        }
+
+        return sectionSb.toString();
+    }
+
+
+    protected String splitMarkdownText(String text, int sectionSize)
+    {
+        StringBuilder textSb = new StringBuilder();
+        List<String> textLines = Arrays.asList(text.split("\n"));
+        int sectionLength = 0;
+        for (String line: textLines) {
+            if (sectionLength > sectionSize) {
+                textSb.append("\n\n").append("### {.empty}").append("\n\n");
+                sectionLength = 0;
+            }
+            textSb.append(line);
+            sectionLength += line.length();
+        }
+
+        return textSb.toString();
+    }
+
+    protected Work getWork()
     {
         if (work == null) {
-            work = item.getPropertyResource(CORE+"itemForWork");
-            if (work != null) {
-                work = dataSource.loadResource(work.getIRI());
+            RDFResource workResource = item.getPropertyResource(CORE+"itemForWork");
+            if (workResource == null) {
+                workResource = item.getPropertyResource(CORE+"itemEtextPaginatedForWork");
+            }
+            if (workResource != null) {
+                workResource = dataSource.loadResource(workResource.getIRI());
+                work = new Work(workResource, dataSource);
             }
         }
 
         return work;
     }
 
-    private List<Etext> getEtexts()
+    protected String getTitle()
     {
-        List<RDFResource> texts = getTexts();
-        List<Etext> etexts = new ArrayList<>();
-        for (RDFResource text: texts) {
+        if (work == null) {
+            return null;
+        }
+
+        return work.getTitle();
+    }
+
+    private Map<Integer, Etext> getEtexts()
+    {
+        Map<Integer, RDFResource> texts = getTexts();
+        Map<Integer, Etext> etexts = new HashMap<>();
+        for (Map.Entry<Integer, RDFResource> entry : texts.entrySet()) {
+            RDFResource text = entry.getValue();
+            Integer volumeNumber = entry.getKey();
             Etext etext = new Etext(text.getIRI(), this.dataSource, item);
-            etexts.add(etext);
+            etexts.put(volumeNumber, etext);
         }
 
         return etexts;
     }
 
-    protected String getTitle()
-    {
-        RDFResource work = getWork();
-        if (work == null) {
-            return null;
-        }
-
-        String preferredLabel;
-        preferredLabel = work.getString(SKOS.concat("prefLabel"));
-
-        return preferredLabel;
-    }
-
-    private List<RDFResource> getTexts()
-    {
-        return getTexts(0);
-    }
-
-    private List<RDFResource> getTexts(int volumeNumber)
+    private Map<Integer, RDFResource> getTexts()
     {
         List<RDFResource> volumes = getVolumes();
-        List<RDFResource> texts = new ArrayList<>();
+        Map<Integer, RDFResource> texts = new HashMap<>();
         for (RDFResource volume: volumes) {
-            if (volumeNumber > 0) {
-                Integer volumeInt = volume.getInteger(CORE+"volumeNumber");
-                if (volumeInt == null || volumeInt != volumeNumber) {
-                    continue;
-                }
-            }
+            Integer volumeInt = volume.getInteger(CORE+"volumeNumber");
 
             List<RDFResource> volumeTextList = volume.getPropertyResources(CORE+"volumeHasEtext");
             if (volumeTextList != null) {
                 for (RDFResource volumeText: volumeTextList) {
                     RDFResource text = volumeText.getPropertyResource(CORE+"eTextResource");
                     if (text != null) {
-                        texts.add(text);
+                        texts.put(volumeInt, text);
                     }
                 }
             }
