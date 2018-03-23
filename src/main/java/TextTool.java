@@ -13,15 +13,17 @@ import com.beust.jcommander.ParameterException;
 
 class DocumentRunnable implements Runnable {
     private DocumentGenerator documentGenerator;
+    private boolean generateDocx;
 
-    DocumentRunnable(DocumentGenerator documentGenerator) {
+    DocumentRunnable(DocumentGenerator documentGenerator, boolean generateDocx) {
         this.documentGenerator = documentGenerator;
+        this.generateDocx = generateDocx;
 
     }
 
     @Override
     public void run() {
-        documentGenerator.generateDocuments(true, false);
+        documentGenerator.generateDocuments(true, generateDocx);
     }
 }
 
@@ -152,7 +154,7 @@ public class TextTool {
         if (executor == null) {
             documentGenerator.generateDocuments(true, createDocx);
         } else {
-            DocumentRunnable runnable = new DocumentRunnable(documentGenerator);
+            DocumentRunnable runnable = new DocumentRunnable(documentGenerator, createDocx);
             executor.execute(runnable);
         }
     }
