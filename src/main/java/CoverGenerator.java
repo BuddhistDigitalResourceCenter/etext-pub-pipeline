@@ -56,7 +56,6 @@ class CoverGenerator {
         title = splitTitle(title);
         this.outputFilePath = outputFilePath;
         List<String> titleLines = StringUtils.wrap(title, fontMetrics, TITLE_WIDTH);
-        System.out.println("titleLines: " + titleLines);
         String titleHtml = String.join("<br/>", titleLines);
         JLabel label = new JLabel("<html><body style='width: " + TITLE_WIDTH + "px; padding: 0px; text-align: center'><p>" + titleHtml + "</p></body></html>");
         label.setFont(coverFont);

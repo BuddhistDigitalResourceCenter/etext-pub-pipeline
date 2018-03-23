@@ -110,7 +110,6 @@ public class DocumentGenerator {
     private String getPandocPath()
     {
         if (pandocPath == null) {
-            System.out.println("Getting pandoc path");
             pandocPath = executeCommand("command -v pandoc");
         }
 
