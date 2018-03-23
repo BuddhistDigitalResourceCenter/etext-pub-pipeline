@@ -17,6 +17,9 @@ For example:
 
     etc.
         
+## Required applications
+
+[Pandoc](http://pandoc.org/) is required to be installed
 
 ## Running
 
@@ -27,17 +30,34 @@ For example:
 ### Options
 
       * --sourceDir, -s
-          The directory that contains the directories containing the .ttl files.
+          The directory that contains the directories containing the .ttl files. 
           (required) 
           
-      * --outputDir, -o
-          The directory where the generated files will be saved. (required)
+        --outputDir, -o
+          The directory where the generated files will be saved. Defaults to 
+          ./output 
+          
+        --documentFiles, -df
+          The directory that contains files used for the epub and docx. Defaults 
+          to ./document_files
           
         --itemId, -id
           If supplied, only the item with this id will be processed.
           
+        --titleAsFilename, -t
+          Use the text title as the filename. Otherwise, the text's ID is used.
+          Default: false
+          
+        --docx, -d
+          Generate docx files in addition to the epubs
+          Default: false
+          
         --help, -h
-          Display the usage information.        
+          Display the usage information.
 
-Epub files will be generated in `/path/to/output/`.
+Epub files will be generated in `/path/to/output/<datetime>/epub`.
+
+docx files will be generated in `/path/to/output/<datetime>/docx`.
+
+Markdown files will be generated in `/path/to/output/<datetime>/markdown`.
 
