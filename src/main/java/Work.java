@@ -138,8 +138,12 @@ public class Work extends BDRCResource {
                     if (pagesContent.containsKey(location.startPage) &&
                             pagesContent.containsKey(location.endPage)) {
                         StringBuilder sb = new StringBuilder();
-                        for(int i=location.startPage; i < location.endPage; i++) {
-                            sb.append(pagesContent.get(i));
+                        if (location.startPage < location.endPage) {
+                            for (int i = location.startPage; i <= location.endPage; i++) {
+                                sb.append(pagesContent.get(i));
+                            }
+                        } else if (location.startPage == location.endPage) {
+                            sb.append(pagesContent.get(location.startPage));
                         }
                         String content = sb.toString();
                         String title = textWork.getTitle();
