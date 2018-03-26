@@ -15,6 +15,7 @@ class WorkSection {
     String content;
     String author;
     int volume;
+    WorkLocation location;
     List<WorkSection> sections;
 
     public String toString()
@@ -131,6 +132,7 @@ public class Work extends BDRCResource {
                 WorkSection section = new WorkSection();
 
                 WorkLocation location = textWork.getLocation();
+                section.location = location;
                 Map<Integer, String> pagesContent = etext.getPageContent();
                 if (location != null && pagesContent != null) {
                     if (pagesContent.containsKey(location.startPage) &&
