@@ -2,10 +2,7 @@ import nl.siegmann.epublib.domain.*;
 import nl.siegmann.epublib.service.MediatypeService;
 import org.apache.jena.ontology.OntModel;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 class EtextPage {
@@ -21,6 +18,7 @@ public class Etext extends BDRCResource {
     private RDFResource etext;
     private RDFResource item;
     private static int maxSectionSize = 10000;
+    private List<EtextPage> pages;
 
     public Etext(String IRI, DataSource dataSource)
     {
@@ -33,6 +31,7 @@ public class Etext extends BDRCResource {
         this.etext = dataSource.loadResource(IRI);
         this.resource = this.etext;
         this.item = item;
+        this.pages = null;
     }
 
     public String generateMarkdown() {
@@ -154,6 +153,7 @@ public class Etext extends BDRCResource {
 
         HashMap<Integer, String> pageContent = new HashMap<>();
         List<String> contentLines = getContentLines();
+        // Note: lines and chars are 1-indexed
         int currentLine = 0;
         int currentPage = 0;
         StringBuilder currentPageData = new StringBuilder();
@@ -217,26 +217,34 @@ public class Etext extends BDRCResource {
 
     protected List<EtextPage> getPages()
     {
-        List<RDFResource> pages = etext.getPropertyResources(CORE+"eTextHasPage");
-        List<EtextPage> etextPages = new ArrayList<>();
+        if (this.pages == null) {
+            List<RDFResource> pages = etext.getPropertyResources(CORE + "eTextHasPage");
+            List<EtextPage> etextPages = new ArrayList<>();
 
-        for(RDFResource page: pages) {
-            EtextPage etextPage = new EtextPage();
-            try {
-                etextPage.page = page.getInteger(CORE + "seqNum");
-                etextPage.startChar = page.getInteger(CORE + "sliceStartChar");
-                etextPage.startLine = page.getInteger(CORE + "sliceStartChunk");
-                etextPage.endChar = page.getInteger(CORE + "sliceEndChar");
-                etextPage.endLine = page.getInteger(CORE + "sliceEndChunk");
-                etextPages.add(etextPage);
-            } catch (Exception e) {
-                System.out.println("Exception getting page for " + etext.getIRI());
-                return null;
+            for (RDFResource page : pages) {
+                EtextPage etextPage = new EtextPage();
+                try {
+                    etextPage.page = page.getInteger(CORE + "seqNum");
+                    etextPage.startChar = page.getInteger(CORE + "sliceStartChar");
+                    etextPage.startLine = page.getInteger(CORE + "sliceStartChunk");
+                    etextPage.endChar = page.getInteger(CORE + "sliceEndChar");
+                    etextPage.endLine = page.getInteger(CORE + "sliceEndChunk");
+                    etextPages.add(etextPage);
+                } catch (Exception e) {
+                    System.out.println("Exception getting page for " + etext.getIRI());
+                    return null;
+                }
+
             }
 
+            etextPages.sort((leftPage, rightPage) -> {
+                return Integer.compare(leftPage.page, rightPage.page);
+            });
+
+            this.pages = etextPages;
         }
 
-        return etextPages;
+        return this.pages;
     }
 
     private HashMap<String, EtextPage> getPageData(List<EtextPage> pages)
