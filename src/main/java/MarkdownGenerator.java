@@ -101,6 +101,10 @@ public class MarkdownGenerator {
                 sections.add(section);
             }
 
+            sections.sort((leftSection, rightSection) -> {
+                return Integer.compare(leftSection.location.startPage, rightSection.location.startPage);
+            });
+
             volumeSections.put(volumeNumber, sections);
         }
 
