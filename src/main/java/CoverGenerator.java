@@ -57,8 +57,12 @@ class CoverGenerator {
         title = splitTitle(title);
         this.outputFilePath = outputFilePath;
         List<String> titleLines = StringUtils.wrap(title, fontMetrics, TITLE_WIDTH);
-        String titleHtml = String.join("<br/>", titleLines);
-        JLabel label = new JLabel("<html><body style='width: " + TITLE_WIDTH + "px; padding: 0px; text-align: center'><p>" + titleHtml + "</p></body></html>");
+        StringBuilder titleHtmlBuilder = new StringBuilder();
+        for (String line: titleLines) {
+            titleHtmlBuilder.append("<p style='padding-bottom: 20px'>").append(line).append("</p>");
+        }
+        String titleHtml = titleHtmlBuilder.toString();
+        JLabel label = new JLabel("<html><body style='width: " + TITLE_WIDTH + "px; padding: 0px; text-align: center'>" + titleHtml + "</body></html>");
         label.setFont(coverFont);
         Dimension labelSize = label.getPreferredSize();
         label.setSize(labelSize);
