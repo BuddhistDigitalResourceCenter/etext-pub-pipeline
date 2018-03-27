@@ -19,6 +19,7 @@ public class DocumentGenerator {
     private final String epubFontFilename = "Jomolhari-ID.ttf";
     private final String epubFontName = "Jomolhari-ID";
     private final String logoFilename = "BDRC-logo-750.png";
+    private final String logoFilename = "BDRC-logo-750-white.png";
 
     DocumentGenerator(String id, String sourceDir, String outputDir, String documentFilesDir, boolean titleAsFilename)
     {

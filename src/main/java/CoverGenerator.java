@@ -21,7 +21,8 @@ class CoverGenerator {
     private BufferedImage image;
     private String outputFilePath;
     private static final Color backgroundColor = Color.WHITE;
-    private static Color bottomColor = new Color(255, 153, 0);
+    private static Color bottomColor = new Color(140, 1, 34);
+    private static Color bottomTypeColor = Color.WHITE;
     private static final int LOGO_TOP = 2200;
     private static final int LOGO_WIDTH = 200;
     private Image logoImage;
@@ -93,7 +94,7 @@ class CoverGenerator {
 
         int logoHeight = logoImage.getHeight(null);
         int logoTextBaseline = LOGO_TOP + (logoHeight / 2) + (int)(logoTextBounds.getHeight() / 2);
-        coverGraphics.setColor(Color.BLACK);
+        coverGraphics.setColor(bottomTypeColor);
         logoLayout.draw(coverGraphics, logoLeft + LOGO_WIDTH + logoRightMargin, logoTextBaseline);
 
         saveCover();
