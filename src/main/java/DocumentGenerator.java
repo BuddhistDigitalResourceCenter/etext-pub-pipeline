@@ -1,8 +1,10 @@
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import org.apache.jena.atlas.lib.StrUtils;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class DocumentGenerator {
@@ -16,9 +18,9 @@ public class DocumentGenerator {
     private final String documentFilesDir;
     private static String pandocPath;
     private final boolean titleAsFilename;
-    private final String epubFontFilename = "Jomolhari-ID.ttf";
-    private final String epubFontName = "Jomolhari-ID";
-    private final String logoFilename = "BDRC-logo-750.png";
+    private static final String epubFontFilename = "NotoSansTibetan-Regular.ttf";
+    private static final String epubFontName = "NotoSansTibetan-Regular";
+    private static final String epubCssFile = "epub.css";
     private final String logoFilename = "BDRC-logo-750-white.png";
 
     DocumentGenerator(String id, String sourceDir, String outputDir, String documentFilesDir, boolean titleAsFilename)
@@ -49,7 +51,7 @@ public class DocumentGenerator {
                     String coverFilename = outputDir + "covers/" + markdownDocument.name + ".png";
                     coverGenerator.generateCover(markdownDocument.title, coverFilename);
 
-                    String epubCommand = generateEpubCommand(sourceDir, outputDir, markdownFilePath, markdownDocument.name, coverFilename);
+                    String epubCommand = generateEpubCommand(outputDir, markdownFilePath, markdownDocument.name, coverFilename);
                     executeCommand(epubCommand);
                 }
 
@@ -80,34 +82,6 @@ public class DocumentGenerator {
         }
     }
 
-    private boolean saveStringToFile(String text, String filePath)
-    {
-        File outputFile = new File(filePath);
-        if (outputFile.getParentFile() != null) {
-            outputFile.getParentFile().mkdirs();
-        }
-
-        try {
-            outputFile.createNewFile();
-        } catch (Exception e) {
-            System.out.println("Failed to create new markdown file");
-            System.out.println(e);
-            return false;
-        }
-
-        try {
-            try(PrintWriter out = new PrintWriter(outputFile)) {
-                out.print(text);
-            }
-        } catch(Exception e) {
-            System.out.println("Failed to write to markdown file.");
-            System.out.println(e);
-            return false;
-        }
-
-        return true;
-    }
-
     private String getPandocPath()
     {
         if (pandocPath == null) {
@@ -117,13 +91,12 @@ public class DocumentGenerator {
         return pandocPath;
     }
 
-    private String generateEpubCommand(String dataPath, String outputDir, String markdownFilePath, String filename, String coverPath)
+    private String generateEpubCommand(String outputDir, String markdownFilePath, String filename, String coverPath)
     {
         String pandocPath = getPandocPath();
         if (pandocPath == null) return null;
 
-        dataPath = StringUtils.ensureTrailingSlash(dataPath);
-        Path sourceEpubCss = new File(documentFilesDir + "epub.css").toPath();
+        String cssPath = getEpubCss(getEpubCssFilepath(documentFilesDir), outputDir);
 
         String epubFilepath = outputDir + "epub/" + filename + ".epub";
         String epubCommand = pandocPath + " " +
@@ -133,8 +106,8 @@ public class DocumentGenerator {
                 "-o \"" + epubFilepath + "\" " +
                 "--toc-depth=2 " +
                 "--epub-chapter-level=3 " +
-                "--epub-stylesheet=\""+sourceEpubCss.toString()+"\" " +
-                "--epub-embed-font=\""+dataPath + "document_files/Jomolhari.ttf"+"\" " +
+                "--epub-stylesheet=\""+cssPath+"\" " +
+                "--epub-embed-font=\""+documentFilesDir + epubFontFilename +"\" " +
                 "--epub-cover=\""+coverPath+"\" "
                 ;
 
@@ -180,5 +153,72 @@ public class DocumentGenerator {
         }
 
         return output;
+    }
+
+    private static boolean saveStringToFile(String text, String filePath)
+    {
+        File outputFile = new File(filePath);
+        if (outputFile.getParentFile() != null) {
+            outputFile.getParentFile().mkdirs();
+        }
+
+        try {
+            outputFile.createNewFile();
+        } catch (Exception e) {
+            System.out.println("Failed to create new markdown file");
+            System.out.println(e);
+            return false;
+        }
+
+        try {
+            try(PrintWriter out = new PrintWriter(outputFile)) {
+                out.print(text);
+            }
+        } catch(Exception e) {
+            System.out.println("Failed to write to markdown file.");
+            System.out.println(e);
+            return false;
+        }
+
+        return true;
+    }
+
+    protected static String getEpubCssFilepath(String documentFilesDirPath)
+    {
+        documentFilesDirPath = StringUtils.ensureTrailingSlash(documentFilesDirPath);
+        return new File(documentFilesDirPath + epubCssFile)
+                .toPath()
+                .toString();
+    }
+
+    protected static String getEpubCss(String cssFilePath, String outputDir)
+    {
+        outputDir = StringUtils.ensureTrailingSlash(outputDir);
+        String outputFilepath = outputDir + "epub.css";
+
+        if (!new File(outputFilepath).exists()) {
+            String cssTemplateText = getFileText(cssFilePath);
+            String cssContent = cssTemplateText.replace("{{$fontFile}}", DocumentGenerator.epubFontFilename);
+            cssContent = cssContent.replace("{{$fontName}}", epubFontName);
+
+            saveStringToFile(cssContent, outputFilepath);
+        }
+
+        return outputFilepath;
+    }
+
+    private static String getFileText(String textContentPath)
+    {
+        List<String> textContentLines;
+        try {
+            textContentLines = Files.readAllLines(
+                    Paths.get(textContentPath), StandardCharsets.UTF_8
+            );
+        } catch (IOException e) {
+            System.out.println("Error loading text content at " + textContentPath);
+            return null;
+        }
+
+        return String.join("\n", textContentLines);
     }
 }

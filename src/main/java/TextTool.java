@@ -113,9 +113,13 @@ public class TextTool {
         }
     }
 
-    private static void createEpubsForDirectory(String sourceDir, String outputDir, String epubFilesDir, boolean createDocx)
+    private static void createEpubsForDirectory(String sourceDir, String outputDir, String documentFilesDir, boolean createDocx)
     {
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+
+        // Ensure the css file is created
+        String cssTemplatePath = DocumentGenerator.getEpubCssFilepath(documentFilesDir);
+        DocumentGenerator.getEpubCss(cssTemplatePath, outputDir);
 
         String itemsPath = StringUtils.ensureTrailingSlash(sourceDir) + "items";
         File[] dirs = new File(itemsPath).listFiles();
@@ -134,7 +138,7 @@ public class TextTool {
                         }
 
                         etextItemPaths.add(item.getAbsolutePath());
-                        processResource(id, sourceDir, outputDir, epubFilesDir, createDocx, executor);
+                        processResource(id, sourceDir, outputDir, documentFilesDir, createDocx, executor);
                     }
                 }
             }

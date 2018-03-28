@@ -1,14 +1,14 @@
 @font-face {
-    font-family: Jomolhari;
+    font-family: {{$fontName}};
     font-style: normal;
     font-weight: normal;
-    src:url("Jomolhari.ttf");
+    src:url("{{$fontFile}}");
 }
 
 body {
     margin: 5%;
     text-align: left;
-    font-family: Jomolhari, serif;
+    font-family: {{$fontName}}, serif;
 }
 
 section.empty h3 {
@@ -20,7 +20,7 @@ section.empty h3 + p {
 }
 
 p {
-    font-family: Jomolhari, serif;
+    font-family: {{$fontName}}, serif;
 }
 
 .origPageNum {
