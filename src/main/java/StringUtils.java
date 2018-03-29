@@ -1,4 +1,8 @@
 import java.awt.*;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -178,5 +182,20 @@ class StringUtils {
     public static String ensureTrailingSlash(String path)
     {
         return path.endsWith("/") ? path : path + "/";
+    }
+
+    public static String getFileText(String textContentPath)
+    {
+        List<String> textContentLines;
+        try {
+            textContentLines = Files.readAllLines(
+                    Paths.get(textContentPath), StandardCharsets.UTF_8
+            );
+        } catch (IOException e) {
+            System.out.println("Error loading text content at " + textContentPath);
+            return null;
+        }
+
+        return String.join("\n", textContentLines);
     }
 }

@@ -1,10 +1,4 @@
-import org.apache.jena.atlas.lib.StrUtils;
-
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 public class DocumentGenerator {
@@ -197,7 +191,7 @@ public class DocumentGenerator {
         String outputFilepath = outputDir + "epub.css";
 
         if (!new File(outputFilepath).exists()) {
-            String cssTemplateText = getFileText(cssFilePath);
+            String cssTemplateText = StringUtils.getFileText(cssFilePath);
             String cssContent = cssTemplateText.replace("{{$fontFile}}", DocumentGenerator.epubFontFilename);
             cssContent = cssContent.replace("{{$fontName}}", epubFontName);
 
@@ -205,20 +199,5 @@ public class DocumentGenerator {
         }
 
         return outputFilepath;
-    }
-
-    private static String getFileText(String textContentPath)
-    {
-        List<String> textContentLines;
-        try {
-            textContentLines = Files.readAllLines(
-                    Paths.get(textContentPath), StandardCharsets.UTF_8
-            );
-        } catch (IOException e) {
-            System.out.println("Error loading text content at " + textContentPath);
-            return null;
-        }
-
-        return String.join("\n", textContentLines);
     }
 }
