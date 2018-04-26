@@ -41,9 +41,9 @@ public class DocumentGenerator {
                 if (generateEpub) {
                     String fontPath = documentFilesDir + epubFontFilename;
                     String logoPath = documentFilesDir + logoFilename;
-                    CoverGenerator coverGenerator = new CoverGenerator(fontPath, epubFontName, logoPath);
+                    CoverGenerator coverGenerator = new CoverGenerator(documentFilesDir, logoPath);
                     String coverFilename = outputDir + "covers/" + markdownDocument.name + ".png";
-                    coverGenerator.generateCover(markdownDocument.title, coverFilename);
+                    coverGenerator.generateCover(markdownDocument.title, markdownDocument.author, markdownDocument.inputter, markdownDocument.volume, coverFilename);
 
                     String epubCommand = generateEpubCommand(outputDir, markdownFilePath, markdownDocument.name, coverFilename);
                     executeCommand(epubCommand);

@@ -11,36 +11,49 @@ import java.util.List;
 class CoverGenerator {
 
     private static final int FONT_SIZE = 90;
+    private static final int SMALL_FONT_SIZE = 80;
+    private static final int SMALLER_FONT_SIZE = 60;
     private static final int COVER_WIDTH = 1600;
     private static final int COVER_HEIGHT = 2400;
     private static final int TITLE_WIDTH = 1200;
-    private static final int TITLE_TOP = 200;
-    private static final String DEFAULT_FONT = "Ximalaya";
-    private static Font coverFont;
+    private static final int TITLE_TOP = 300;
+    private static final String TIBETAN_FONT = "Qomolangma-UchenSarchen.ttf";
+    private static final String TIBETAN_FONT_NAME = "Qomolangma-Uchen Sarchen";
+    private static final String LATIN_FONT = "EBGaramond-SemiBold.ttf";
+    private static Font coverFontTibetan;
+    private static Font coverFontLatin;
     private static FontMetrics fontMetrics;
     private BufferedImage image;
     private String outputFilePath;
     private static final Color backgroundColor = Color.WHITE;
-    private static Color bottomColor = new Color(140, 1, 34);
+    private static Color bottomColor = new Color(129, 25, 38);
     private static Color bottomTypeColor = Color.WHITE;
-    private static final int LOGO_TOP = 2200;
-    private static final int LOGO_WIDTH = 200;
+    private static final int LOGO_TOP = 2100;
+    private static final int LOGO_WIDTH = 170;
+    private static final int TEXT_MARGIN_SIDE = 50;
+    private static final int TEXT_MARGIN_TOPBOTTOM = 50;
     private Image logoImage;
 
-    public CoverGenerator(String fontPath, String fontName, String logoPath)
+    public CoverGenerator(String documentFilesPath, String logoPath)
     {
         try {
             image = new BufferedImage(COVER_WIDTH, COVER_HEIGHT, BufferedImage.TYPE_INT_ARGB);
             Graphics2D graphics = image.createGraphics();
             graphics.setPaint(backgroundColor);
             graphics.fillRect(0, 0, COVER_WIDTH, COVER_HEIGHT);
+            documentFilesPath = StringUtils.ensureTrailingSlash(documentFilesPath);
 
-            if (coverFont == null) {
-                coverFont = getFont(fontPath, fontName, Font.PLAIN, FONT_SIZE);
+            if (coverFontTibetan == null) {
+                coverFontTibetan = getFont(documentFilesPath + TIBETAN_FONT, TIBETAN_FONT_NAME, Font.PLAIN, FONT_SIZE);
+            }
+
+            if (coverFontLatin == null) {
+                String latinFontName = LATIN_FONT.replace(".ttf", "");
+                coverFontLatin = getFont(documentFilesPath + LATIN_FONT, latinFontName, Font.PLAIN, 80);
             }
 
             if (fontMetrics == null) {
-                fontMetrics = graphics.getFontMetrics(coverFont);
+                fontMetrics = graphics.getFontMetrics(coverFontTibetan);
             }
 
             graphics.dispose();
@@ -52,18 +65,26 @@ class CoverGenerator {
         }
     }
 
-    public void generateCover(String title, String outputFilePath)
+    public void generateCover(String title, String author, String inputter, int volume, String outputFilePath)
     {
-        title = splitTitle(title);
+        // Need to add spacing for the Qomolangma-UchenSarchen font.
+        // Other fonts won't require it.
+        title = title.replace("༼", " ༼\u00A0\u00A0\u00A0\u00A0");
+        title = title.replace("༽", "\u00A0\u00A0༽ ");
+
         this.outputFilePath = outputFilePath;
         List<String> titleLines = StringUtils.wrap(title, fontMetrics, TITLE_WIDTH);
         StringBuilder titleHtmlBuilder = new StringBuilder();
         for (String line: titleLines) {
             titleHtmlBuilder.append("<p style='padding-bottom: 20px'>").append(line).append("</p>");
         }
+        if (volume > 0) {
+            String tibetanVolume = TibetanUtils.getTibetanNumber(volume);
+            titleHtmlBuilder.append("<p style='padding-top: 100px'>").append(tibetanVolume).append("</p>");
+        }
         String titleHtml = titleHtmlBuilder.toString();
         JLabel label = new JLabel("<html><body style='width: " + TITLE_WIDTH + "px; padding: 0px; text-align: center'>" + titleHtml + "</body></html>");
-        label.setFont(coverFont);
+        label.setFont(coverFontTibetan);
         Dimension labelSize = label.getPreferredSize();
         label.setSize(labelSize);
         BufferedImage titleImage = new BufferedImage(labelSize.width, labelSize.height, BufferedImage.TYPE_INT_ARGB);
@@ -85,9 +106,37 @@ class CoverGenerator {
 
         coverGraphics.drawImage(bottomColourImage, 0, COVER_HEIGHT - bottomColourHeight, null);
 
-        Font logoFont = new Font("Arial", Font.PLAIN, 80);
+        Font textTibetanFont = new Font(TIBETAN_FONT_NAME, Font.PLAIN, SMALL_FONT_SIZE);
+
+        // Author
+        if (author != null) {
+            FontRenderContext frc = coverGraphics.getFontRenderContext();
+            TextLayout authorLayout = new TextLayout(author, textTibetanFont, frc);
+            Rectangle2D authorTextBounds = authorLayout.getBounds();
+            int authorWidth = (int)authorTextBounds.getWidth();
+            int x = COVER_WIDTH - authorWidth - TEXT_MARGIN_SIDE;
+            int y = COVER_HEIGHT - bottomColourHeight - TEXT_MARGIN_TOPBOTTOM;
+            coverGraphics.setColor(bottomColor);
+            authorLayout.draw(coverGraphics, x, y);
+        }
+
+        // Inputter
+        if (inputter != null) {
+            Font inputterTibetanFont = new Font(TIBETAN_FONT_NAME, Font.PLAIN, SMALLER_FONT_SIZE);
+            FontRenderContext frc = coverGraphics.getFontRenderContext();
+            TextLayout inputterLayout = new TextLayout(inputter, inputterTibetanFont, frc);
+            Rectangle2D inputterTextBounds = inputterLayout.getBounds();
+            int inputterWidth = (int)inputterTextBounds.getWidth();
+            int inputterHeight = (int)inputterTextBounds.getHeight();
+            int x = COVER_WIDTH - inputterWidth - TEXT_MARGIN_SIDE;
+            int y = COVER_HEIGHT - bottomColourHeight + inputterHeight;
+            coverGraphics.setColor(Color.WHITE);
+            inputterLayout.draw(coverGraphics, x, y);
+        }
+
+        // Logo and logo text
         FontRenderContext frc = coverGraphics.getFontRenderContext();
-        TextLayout logoLayout = new TextLayout("BDRC eBooks", logoFont, frc);
+        TextLayout logoLayout = new TextLayout("BDRC eBooks", coverFontLatin, frc);
         Rectangle2D logoTextBounds = logoLayout.getBounds();
 
         int logoRightMargin = 40;
@@ -100,6 +149,7 @@ class CoverGenerator {
         int logoTextBaseline = LOGO_TOP + (logoHeight / 2) + (int)(logoTextBounds.getHeight() / 2);
         coverGraphics.setColor(bottomTypeColor);
         logoLayout.draw(coverGraphics, logoLeft + LOGO_WIDTH + logoRightMargin, logoTextBaseline);
+
 
         saveCover();
     }
@@ -134,7 +184,8 @@ class CoverGenerator {
             GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
             ge.registerFont(customFont);
         } catch(Exception e) {
-            fontName = DEFAULT_FONT;
+            System.out.println("Failed to get font: " + fontPath);
+            fontName = TIBETAN_FONT;
         }
 
         return new Font(fontName, fontStyle, fontSize);
