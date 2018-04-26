@@ -12,8 +12,8 @@ public class DocumentGenerator {
     private final String documentFilesDir;
     private static String pandocPath;
     private final boolean titleAsFilename;
-    private static final String epubFontFilename = "NotoSansTibetan-Regular.ttf";
-    private static final String epubFontName = "NotoSansTibetan-Regular";
+    private static final String epubFontFilename = "MonlamUniOuChan2.ttf";
+    private static final String epubFontName = "MonlamUniOuChan2";
     private static final String epubCssFile = "epub.css";
     private final String logoFilename = "BDRC-logo-750-white.png";
 
