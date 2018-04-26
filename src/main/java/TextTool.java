@@ -59,6 +59,7 @@ public class TextTool {
     private static final String ETEXT_TYPE = "ItemEtextPaginated";
     private static final String ETEXT_PREFIX = "E";
     private static boolean titleAsFilename = false;
+    private static final String TERMS_FILENAME = "terms.md";
 
     public static void main(String[] args)
     {
@@ -117,7 +118,7 @@ public class TextTool {
     {
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
 
-        // Ensure the css file is created
+        // Ensure the css file is created so it won't cause potential race condition.
         String cssTemplatePath = DocumentGenerator.getEpubCssFilepath(documentFilesDir);
         DocumentGenerator.getEpubCss(cssTemplatePath, outputDir);
 
@@ -152,9 +153,11 @@ public class TextTool {
         }
     }
 
-    private static void processResource(String id, String sourceDir, String outputDir, String epubFilesDir, boolean createDocx, ExecutorService executor)
+    private static void processResource(String id, String sourceDir, String outputDir, String documentFilesDir, boolean createDocx, ExecutorService executor)
     {
-        DocumentGenerator documentGenerator = new DocumentGenerator(id, sourceDir, outputDir, epubFilesDir, titleAsFilename);
+        documentFilesDir = StringUtils.ensureTrailingSlash(documentFilesDir);
+        String terms = StringUtils.getFileText(documentFilesDir + TERMS_FILENAME);
+        DocumentGenerator documentGenerator = new DocumentGenerator(id, sourceDir, outputDir, documentFilesDir, titleAsFilename, terms);
         if (executor == null) {
             documentGenerator.generateDocuments(true, createDocx);
         } else {

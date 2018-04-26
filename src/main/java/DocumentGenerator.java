@@ -12,12 +12,13 @@ public class DocumentGenerator {
     private final String documentFilesDir;
     private static String pandocPath;
     private final boolean titleAsFilename;
+    private final String terms;
     private static final String epubFontFilename = "MonlamUniOuChan2.ttf";
     private static final String epubFontName = "MonlamUniOuChan2";
     private static final String epubCssFile = "epub.css";
     private final String logoFilename = "BDRC-logo-750-white.png";
 
-    DocumentGenerator(String id, String sourceDir, String outputDir, String documentFilesDir, boolean titleAsFilename)
+    DocumentGenerator(String id, String sourceDir, String outputDir, String documentFilesDir, boolean titleAsFilename, String terms)
     {
         this.id = id;
         this.sourceDir = StringUtils.ensureTrailingSlash(sourceDir);
@@ -25,11 +26,12 @@ public class DocumentGenerator {
         this.ds = new FileDataSource(this.sourceDir);
         this.documentFilesDir = StringUtils.ensureTrailingSlash(documentFilesDir);
         this.titleAsFilename = titleAsFilename;
+        this.terms = terms;
     }
 
     public void generateDocuments(boolean generateEpub, boolean generateDocx)
     {
-        MarkdownGenerator markdownGenerator = new MarkdownGenerator(id, sourceDir, outputDir, titleAsFilename);
+        MarkdownGenerator markdownGenerator = new MarkdownGenerator(id, sourceDir, outputDir, titleAsFilename, terms);
         List<MarkdownDocument> markdownDocuments = markdownGenerator.generateMarkdownForResource(id, ds);
 
         if (markdownDocuments != null) {
@@ -39,7 +41,6 @@ public class DocumentGenerator {
                 createOutputDirs(outputDir, generateEpub, generateDocx);
 
                 if (generateEpub) {
-                    String fontPath = documentFilesDir + epubFontFilename;
                     String logoPath = documentFilesDir + logoFilename;
                     CoverGenerator coverGenerator = new CoverGenerator(documentFilesDir, logoPath);
                     String coverFilename = outputDir + "covers/" + markdownDocument.name + ".png";

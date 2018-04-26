@@ -1,7 +1,6 @@
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.apache.jena.ontology.OntModel;
+
+import java.util.*;
 
 class WorkLocation {
     int volume;
@@ -23,6 +22,19 @@ class WorkSection {
         String sectionsString = "";
         if (sections!= null && sections.size() > 0) sectionsString = sections.toString();
         return super.toString() + ", sections: " + sectionsString + "\n";
+    }
+}
+
+class MetadataItem {
+    String label;
+    String IRI;
+    List<String> values;
+
+    MetadataItem(String label, String IRI)
+    {
+        this.label = label;
+        this.IRI = IRI;
+        this.values = new ArrayList<>();
     }
 }
 
@@ -54,6 +66,56 @@ public class Work extends BDRCResource {
     @Override
     String getTitle() {
         return work.getString(SKOS.concat("prefLabel"));
+    }
+
+    public List<MetadataItem> getMetadata()
+    {
+        List<MetadataItem> metadataItems = new ArrayList<>();
+
+        if (work != null) {
+
+            List<MetadataItem> requiredItems = Arrays.asList(
+                    new MetadataItem("Title", SKOS.concat("prefLabel")),
+                    new MetadataItem("", CORE+"workCatalogInfo")
+            );
+
+            for (MetadataItem item: requiredItems) {
+                List<RDFProperty> props = resource.getProperties(item.IRI);
+                if (props == null) {
+                    System.out.println("No " + item.IRI + " for work: " + resource.getIRI());
+                    continue;
+                }
+
+                OntModel ontModel = work.getOntModel();
+                if (item.label.isEmpty()) {
+                    item.label = RDFUtil.getOntologyLabel(ontModel, item.IRI);
+                }
+                List<String> propItems = new ArrayList<>();
+                for (RDFProperty prop: props) {
+                    if (prop.isLiteral()) {
+                        RDFLiteral lit = prop.asLiteral();
+                        propItems.add(lit.getString());
+                    } else {
+                        RDFResource resource = prop.asResource();
+                        for (RDFProperty resProp: resource.getAllProperties()) {
+                            if (resProp.isLiteral()) {
+                                propItems.add(resProp.asLiteral().getString());
+                            } else {
+                                String resPropLabel = resProp.asResource().getString(RDFS+"label");
+                                if (resPropLabel != null) {
+                                    propItems.add(resPropLabel);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                item.values = propItems;
+                metadataItems.add(item);
+            }
+        }
+
+        return metadataItems;
     }
 
     /**
@@ -130,7 +192,7 @@ public class Work extends BDRCResource {
         if (works != null && works.size() > 0) {
             for (Work textWork : works) {
                 WorkSection section = new WorkSection();
-
+                section.work = textWork;
                 WorkLocation location = textWork.getLocation();
                 section.location = location;
                 Map<Integer, String> pagesContent = etext.getPageContent();

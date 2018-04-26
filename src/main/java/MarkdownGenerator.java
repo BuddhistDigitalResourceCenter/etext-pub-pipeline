@@ -12,6 +12,9 @@ class MarkdownDocument {
     String markdown;
     String name;
     String title;
+    String author;
+    String inputter;
+    int volume;
 }
 
 public class MarkdownGenerator {
@@ -22,16 +25,19 @@ public class MarkdownGenerator {
     private final String sourceDir;
     private final String outputDir;
     private final FileDataSource ds;
+    private final String terms;
     private final boolean titleAsFilename;
-    private static int maxSectionSize = 10000;
+    private static int maxSectionSize = 50000;
+    private static int linesPerPara = 10;
 
-    MarkdownGenerator(String id, String sourceDir, String outputDir, boolean titleAsFilename)
+    MarkdownGenerator(String id, String sourceDir, String outputDir, boolean titleAsFilename, String terms)
     {
         this.id = id;
         this.sourceDir = StringUtils.ensureTrailingSlash(sourceDir);
         this.outputDir = StringUtils.ensureTrailingSlash(outputDir);
         this.ds = new FileDataSource(this.sourceDir);
         this.titleAsFilename = titleAsFilename;
+        this.terms = terms;
     }
 
     public List<MarkdownDocument> generateMarkdownForResource(String id, FileDataSource ds )
@@ -79,9 +85,10 @@ public class MarkdownGenerator {
         Map<Integer, Etext> etexts = item.getEtexts();
         Work work = item.getWork();
         Map<Integer, List<Work>> workParts = null;
+        List<MetadataItem> mainMetadataItems = null;
         if (work != null ) {
-            //System.out.println("Processing parts for " + IRI + " in work: " + work.IRI);
             workParts = work.getWorkParts();
+            mainMetadataItems = work.getMetadata();
         }
 
         int totalVolumes = etexts.keySet().size();
@@ -96,6 +103,7 @@ public class MarkdownGenerator {
                 sections = new ArrayList<>();
 
                 WorkSection section = new WorkSection();
+                section.work = work;
                 section.title = "The Text";
                 section.content = String.join("\n", etext.getContentLines());
                 sections.add(section);
@@ -119,10 +127,16 @@ public class MarkdownGenerator {
                     .append("\n\n");
 
             if (totalVolumes > 1) {
-                docSb.append("[Volume ")
-                        .append(volume)
+                docSb.append("[པོད ")
+                        .append(TibetanUtils.getTibetanNumber(volume))
                         .append("]{.volume}")
                         .append("\n\n");
+            }
+
+            docSb.append(terms).append("\n\n");
+
+            if (mainMetadataItems != null) {
+                docSb.append(markdownForMetadata(mainMetadataItems)).append("\n\n");
             }
 
             for (WorkSection workSection: sections) {
@@ -134,15 +148,30 @@ public class MarkdownGenerator {
             if (titleAsFilename) {
                 textName = item.getTitle();
             }
-            if (totalVolumes > 1) {
-                textName += "_vol_" + volume;
-                title += " Volume " + volume;
-            }
+
             MarkdownDocument document = new MarkdownDocument(docSb.toString(), textName, title);
+            if (totalVolumes > 1) {
+                document.name = textName + "_vol_" + volume;
+                document.volume = volume;
+            }
+            document.author = item.getAuthor();
+            document.inputter = item.getDistributor();
             markdownDocuments.add(document);
         }
 
         return markdownDocuments;
+    }
+
+    private String markdownForMetadata(List<MetadataItem> metadataItems)
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append(" | \n-|-:\n");
+        for (MetadataItem item: metadataItems) {
+            sb.append(item.label).append("|").append(String.join(", ", item.values));
+            sb.append("\n");
+        }
+
+        return sb.toString();
     }
 
     public String markdownForSection(WorkSection section, int level) {
@@ -185,13 +214,22 @@ public class MarkdownGenerator {
         StringBuilder textSb = new StringBuilder();
         List<String> textLines = Arrays.asList(text.split("\n"));
         int sectionLength = 0;
+        int paraLine = 0;
         for (String line: textLines) {
+            paraLine++;
             if (sectionLength > sectionSize) {
                 textSb.append("\n\n").append("### {.empty}").append("\n\n");
                 sectionLength = 0;
+                paraLine = 0;
             }
             textSb.append(line);
+            textSb.append("\n");
             sectionLength += line.length();
+            if (paraLine > 0 && paraLine % linesPerPara == 0) {
+                // add para break to speed up page rendering
+                textSb.append("\n");
+                paraLine = 0;
+            }
         }
 
         return textSb.toString();
