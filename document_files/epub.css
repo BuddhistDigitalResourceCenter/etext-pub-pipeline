@@ -5,10 +5,28 @@
     src:url("{{$fontFile}}");
 }
 
+
+table {
+    border-spacing: 0;
+    border: 1px solid #888;
+}
+
+td {
+    padding: 10px;
+}
+
+td:nth-child(1) {
+    font-family: sans-serif;
+    font-weight: bold;
+    border-right: 1px solid #888;
+}
+
 body {
     margin: 5%;
     text-align: left;
     font-family: {{$fontName}}, serif;
+    font-size: 1.167em;
+    line-height:1.643;
 }
 
 section.empty h3 {
@@ -21,6 +39,7 @@ section.empty h3 + p {
 
 p {
     font-family: {{$fontName}}, serif;
+    margin: 0;
 }
 
 .origPageNum {
@@ -29,14 +48,64 @@ p {
     vertical-align: super;
 }
 
-/* Pandoc default styles */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: normal;
+}
+
 code { font-family: monospace; }
-h1 { text-align: left; }
-h2 { text-align: left; }
-h3 { text-align: left; }
-h4 { text-align: left; }
-h5 { text-align: left; }
-h6 { text-align: left; }
+
+h1 {
+    text-align: left;
+    font-size: 1.5em;
+    color: #8b6d49;
+    text-align: center;
+}
+h2 {
+    text-align: left;
+    font-size: 1.333em;
+    color: #8b6d49;
+    text-align: center;
+}
+h3 {
+    text-align: left;
+}
+h4 {
+    text-align: left;
+    font-size: 1.25em;
+}
+h5 {
+    text-align: left;
+}
+h6 {
+    text-align: left;
+}
+
+.termsHeader {
+    font-family: serif;
+}
+
+.terms .en,
+.terms .zh {
+    font-size: 0.8em;
+    line-height: 1.3;
+    margin-bottom: 40px;
+}
+.terms .bo {
+    font-size: 0.8em;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.terms p {
+    margin-bottom: 10px;
+}
+
+.ccImage {
+    display: inline-block;
+    float: left;
+    margin-right: 10px;
+}
+
 h1.title { }
 h2.author { }
 h3.date { }
