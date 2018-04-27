@@ -233,32 +233,4 @@ public class MarkdownGenerator {
 
         return textSb.toString();
     }
-
-    private boolean saveStringToFile(String text, String filePath)
-    {
-        File outputFile = new File(filePath);
-        if (outputFile.getParentFile() != null) {
-            outputFile.getParentFile().mkdirs();
-        }
-
-        try {
-            outputFile.createNewFile();
-        } catch (Exception e) {
-            System.out.println("Failed to create new markdown file");
-            System.out.println(e);
-            return false;
-        }
-
-        try {
-            try(PrintWriter out = new PrintWriter(outputFile)) {
-                out.print(text);
-            }
-        } catch(Exception e) {
-            System.out.println("Failed to write to markdown file.");
-            System.out.println(e);
-            return false;
-        }
-
-        return true;
-    }
 }
