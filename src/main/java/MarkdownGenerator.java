@@ -75,7 +75,9 @@ public class MarkdownGenerator {
         String itemIRI = BDR + itemId;
         Item item = new Item(itemIRI, ds);
 
-        if (!item.getType().equals("http://purl.bdrc.io/ontology/core/ItemEtextPaginated")) {
+        if (!item.getType().equals("http://purl.bdrc.io/ontology/core/ItemEtextPaginated")
+                && !item.getType().equals("http://purl.bdrc.io/ontology/core/ItemEtextNonPaginated")
+                ) {
             return null;
         }
 
@@ -97,7 +99,7 @@ public class MarkdownGenerator {
             Integer volumeNumber = entry.getKey();
             List<WorkSection> sections;
 
-            if (work != null && workParts.size() > 0) {
+            if (work != null && workParts.size() > 0 && etext.getPages() != null && etext.getPages().size() > 0) {
                 sections = work.getSections(etext, volumeNumber);
             } else {
                 sections = new ArrayList<>();

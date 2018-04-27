@@ -37,6 +37,9 @@ public class Item extends BDRCResource {
             RDFResource workResource = item.getPropertyResource(CORE+"itemForWork");
             if (workResource == null) {
                 workResource = item.getPropertyResource(CORE+"itemEtextPaginatedForWork");
+                if (workResource == null) {
+                    workResource = item.getPropertyResource(CORE+"itemEtextNonPaginatedForWork");
+                }
             }
             if (workResource != null) {
                 workResource = dataSource.loadResource(workResource.getIRI());
