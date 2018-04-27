@@ -13,17 +13,19 @@ import com.beust.jcommander.ParameterException;
 
 class DocumentRunnable implements Runnable {
     private DocumentGenerator documentGenerator;
+    private boolean generateEpub;
     private boolean generateDocx;
 
-    DocumentRunnable(DocumentGenerator documentGenerator, boolean generateDocx) {
+    DocumentRunnable(DocumentGenerator documentGenerator, boolean generateEpub, boolean generateDocx) {
         this.documentGenerator = documentGenerator;
+        this.generateEpub = generateEpub;
         this.generateDocx = generateDocx;
 
     }
 
     @Override
     public void run() {
-        documentGenerator.generateDocuments(true, generateDocx);
+        documentGenerator.generateDocuments(generateEpub, generateDocx);
     }
 }
 
@@ -46,8 +48,11 @@ class Args {
     @Parameter(names={"--titleAsFilename", "-t"}, order = 4, description = "Use the text title as the filename. Otherwise, the text's ID is used.")
     public boolean titleAsFilename;
 
-    @Parameter(names={"--docx", "-d"}, order = 5, description = "Generate docx files in addition to the epubs")
+    @Parameter(names={"--docx", "-d"}, order = 5, description = "Only generate docx files")
     public boolean docx;
+
+    @Parameter(names={"--epub", "-e"}, order = 5, description = "Only generate epub files")
+    public boolean epub;
 
     @Parameter(names={"--help", "-h"}, order = 6, help = true, description = "Display the usage information.")
     public boolean help;
@@ -80,7 +85,7 @@ public class TextTool {
             return;
         }
 
-        titleAsFilename = commandArgs.titleAsFilename;
+        titleAsFilename = true;
 
         int processors = Runtime.getRuntime().availableProcessors();
         threadCount = (processors > 1) ? processors - 1 : 1;
@@ -106,15 +111,18 @@ public class TextTool {
         }
         String itemId = commandArgs.itemId;
 
+        boolean createEpub = !commandArgs.docx;
+        boolean createDocx = !commandArgs.epub;
+
         if (itemId != null && itemId.length() > 0) {
             // just process the given item
-            processResource(itemId, dataPath, outputDirPath, documentFilesDir, commandArgs.docx, null);
+            processResource(itemId, dataPath, outputDirPath, documentFilesDir, createEpub, createDocx, null);
         } else {
-            createEpubsForDirectory(dataPath, outputDirPath, documentFilesDir, commandArgs.docx);
+            createEpubsForDirectory(dataPath, outputDirPath, documentFilesDir, createEpub, createDocx);
         }
     }
 
-    private static void createEpubsForDirectory(String sourceDir, String outputDir, String documentFilesDir, boolean createDocx)
+    private static void createEpubsForDirectory(String sourceDir, String outputDir, String documentFilesDir, boolean createEpub, boolean createDocx)
     {
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
 
@@ -139,7 +147,7 @@ public class TextTool {
                         }
 
                         etextItemPaths.add(item.getAbsolutePath());
-                        processResource(id, sourceDir, outputDir, documentFilesDir, createDocx, executor);
+                        processResource(id, sourceDir, outputDir, documentFilesDir, createEpub, createDocx, executor);
                     }
                 }
             }
@@ -153,15 +161,15 @@ public class TextTool {
         }
     }
 
-    private static void processResource(String id, String sourceDir, String outputDir, String documentFilesDir, boolean createDocx, ExecutorService executor)
+    private static void processResource(String id, String sourceDir, String outputDir, String documentFilesDir, boolean createEpub, boolean createDocx, ExecutorService executor)
     {
         documentFilesDir = StringUtils.ensureTrailingSlash(documentFilesDir);
         String terms = StringUtils.getFileText(documentFilesDir + TERMS_FILENAME);
         DocumentGenerator documentGenerator = new DocumentGenerator(id, sourceDir, outputDir, documentFilesDir, titleAsFilename, terms);
         if (executor == null) {
-            documentGenerator.generateDocuments(true, createDocx);
+            documentGenerator.generateDocuments(createEpub, createDocx);
         } else {
-            DocumentRunnable runnable = new DocumentRunnable(documentGenerator, createDocx);
+            DocumentRunnable runnable = new DocumentRunnable(documentGenerator, createEpub, createDocx);
             executor.execute(runnable);
         }
     }
