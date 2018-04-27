@@ -142,7 +142,10 @@ public class MarkdownGenerator {
             String textName = item.getId();
             String title = item.getTitle();
             if (titleAsFilename) {
-                textName = item.getTitle();
+                textName = item.getTitle() + " " + item.getId();
+            }
+            if (item.isOcr()) {
+                textName = "OCR " + textName;
             }
 
             MarkdownDocument document = new MarkdownDocument(docSb.toString(), textName, title);

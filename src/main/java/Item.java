@@ -8,6 +8,7 @@ public class Item extends BDRCResource {
 
     private RDFResource item;
     private Map<String, String>distributors;
+    private List<String>ocrDistributors;
 
     public Item(String IRI, DataSource dataSource)
     {
@@ -29,6 +30,9 @@ public class Item extends BDRCResource {
         distributors.put(prefix+"009", "ཡི་གེ་གཏགས་མའི་ཡོང་ཁུངས། རྦུར་ཁུ་ལེ་སློབ་ཆེན།");
         distributors.put(prefix+"010", "ཡི་གེ་གཏགས་མའི་ཡོང་ཁུངས། བཛྲ་བིདྱཱ།");
         distributors.put(prefix+"011", "ཡི་གེ་གཏགས་མའི་ཡོང་ཁུངས། མི་གསལ།");
+
+        ocrDistributors = new ArrayList<>();
+        ocrDistributors.add(prefix+"009");
     }
 
     protected Work getWork()
@@ -99,13 +103,19 @@ public class Item extends BDRCResource {
         return item.getPropertyResources(CORE+"itemHasVolume");
     }
 
-    public String getDistributor()
+    public String getDistributorId()
     {
         RDFResource distributor = item.getPropertyResource(CORE+"eTextDistributor");
         Path iriPath = Paths.get(distributor.getIRI());
         Path lastSegment = iriPath.getName(iriPath.getNameCount() - 1);
         String id = lastSegment.toString();
 
+        return id;
+    }
+
+    public String getDistributor()
+    {
+        String id = getDistributorId();
         String name = distributors.get(id);
 
         if (name != null) {
@@ -113,5 +123,11 @@ public class Item extends BDRCResource {
         } else {
             return null;
         }
+    }
+
+    public boolean isOcr()
+    {
+        String id = getDistributorId();
+        return ocrDistributors.contains(id);
     }
 }
