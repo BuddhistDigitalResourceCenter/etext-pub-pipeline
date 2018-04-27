@@ -87,10 +87,8 @@ public class MarkdownGenerator {
         Map<Integer, Etext> etexts = item.getEtexts();
         Work work = item.getWork();
         Map<Integer, List<Work>> workParts = null;
-        List<MetadataItem> mainMetadataItems = null;
         if (work != null ) {
             workParts = work.getWorkParts();
-            mainMetadataItems = work.getMetadata();
         }
 
         int totalVolumes = etexts.keySet().size();
@@ -136,10 +134,6 @@ public class MarkdownGenerator {
             }
 
             docSb.append(terms).append("\n\n");
-
-            if (mainMetadataItems != null) {
-                docSb.append(markdownForMetadata(mainMetadataItems)).append("\n\n");
-            }
 
             for (WorkSection workSection: sections) {
                 docSb.append(markdownForSection(workSection, 2));
