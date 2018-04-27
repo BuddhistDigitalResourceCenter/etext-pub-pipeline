@@ -70,7 +70,7 @@ public class Etext extends BDRCResource {
         }
 
         if (limitSectionSize) {
-            sb.append("\n\n## The Text\n\n");
+            sb.append("\n\n## The Text {.enHeader}\n\n");
             int sectionLength = 0;
             for (String line: contentLines) {
                 if (sectionLength > maxSectionSize) {

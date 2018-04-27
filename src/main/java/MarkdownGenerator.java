@@ -104,7 +104,7 @@ public class MarkdownGenerator {
 
                 WorkSection section = new WorkSection();
                 section.work = work;
-                section.title = "The Text";
+                section.title = "The Text {.enHeader}";
                 section.content = String.join("\n", etext.getContentLines());
                 sections.add(section);
             }
@@ -127,9 +127,9 @@ public class MarkdownGenerator {
                     .append("\n\n");
 
             if (totalVolumes > 1) {
-                docSb.append("[པོད ")
+                docSb.append("#### པོད ")
                         .append(TibetanUtils.getTibetanNumber(volume))
-                        .append("]{.volume}")
+                        .append(" {.volume}")
                         .append("\n\n");
             }
 

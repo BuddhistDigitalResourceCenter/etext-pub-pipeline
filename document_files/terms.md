@@ -1,4 +1,4 @@
-## Terms of use {.termsHeader}
+## Terms of use {.enHeader}
 
 <div class="terms">
 

@@ -55,32 +55,24 @@ h1, h2, h3, h4, h5, h6 {
 code { font-family: monospace; }
 
 h1 {
-    text-align: left;
     font-size: 1.5em;
     color: #8b6d49;
     text-align: center;
 }
 h2 {
-    text-align: left;
     font-size: 1.333em;
     color: #8b6d49;
     text-align: center;
 }
-h3 {
-    text-align: left;
-}
 h4 {
-    text-align: left;
     font-size: 1.25em;
 }
-h5 {
-    text-align: left;
-}
-h6 {
-    text-align: left;
+
+.volume h4 {
+    text-align: center;
 }
 
-.termsHeader {
+.enHeader {
     font-family: serif;
 }
 
