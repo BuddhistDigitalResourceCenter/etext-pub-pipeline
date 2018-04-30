@@ -45,9 +45,6 @@ class Args {
     @Parameter(names={"--itemId", "-id"}, order = 3, description = "If supplied, only the item with this id will be processed.")
     public String itemId;
 
-    @Parameter(names={"--titleAsFilename", "-t"}, order = 4, description = "Use the text title as the filename. Otherwise, the text's ID is used.")
-    public boolean titleAsFilename;
-
     @Parameter(names={"--docx", "-d"}, order = 5, description = "Only generate docx files")
     public boolean docx;
 
@@ -63,7 +60,6 @@ public class TextTool {
     private static int threadCount = 4;
     private static final String ETEXT_TYPE = "ItemEtextPaginated";
     private static final String ETEXT_PREFIX = "E";
-    private static boolean titleAsFilename = false;
     private static final String TERMS_FILENAME = "terms.md";
 
     public static void main(String[] args)
@@ -84,8 +80,6 @@ public class TextTool {
             jcommander.usage();
             return;
         }
-
-        titleAsFilename = true;
 
         int processors = Runtime.getRuntime().availableProcessors();
         threadCount = (processors > 1) ? processors - 1 : 1;
@@ -165,7 +159,7 @@ public class TextTool {
     {
         documentFilesDir = StringUtils.ensureTrailingSlash(documentFilesDir);
         String terms = StringUtils.getFileText(documentFilesDir + TERMS_FILENAME);
-        DocumentGenerator documentGenerator = new DocumentGenerator(id, sourceDir, outputDir, documentFilesDir, titleAsFilename, terms);
+        DocumentGenerator documentGenerator = new DocumentGenerator(id, sourceDir, outputDir, documentFilesDir, terms);
         if (executor == null) {
             documentGenerator.generateDocuments(createEpub, createDocx);
         } else {

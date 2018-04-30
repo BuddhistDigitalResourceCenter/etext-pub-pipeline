@@ -26,17 +26,15 @@ public class MarkdownGenerator {
     private final String outputDir;
     private final FileDataSource ds;
     private final String terms;
-    private final boolean titleAsFilename;
     private static int maxSectionSize = 50000;
     private static int linesPerPara = 10;
 
-    MarkdownGenerator(String id, String sourceDir, String outputDir, boolean titleAsFilename, String terms)
+    MarkdownGenerator(String id, String sourceDir, String outputDir, String terms)
     {
         this.id = id;
         this.sourceDir = StringUtils.ensureTrailingSlash(sourceDir);
         this.outputDir = StringUtils.ensureTrailingSlash(outputDir);
         this.ds = new FileDataSource(this.sourceDir);
-        this.titleAsFilename = titleAsFilename;
         this.terms = terms;
     }
 
@@ -46,7 +44,7 @@ public class MarkdownGenerator {
         String firstChar = String.valueOf(id.charAt(0));
         switch(firstChar) {
             case "I":
-                markdownDocuments = generateItemMarkdown(id, ds, titleAsFilename);
+                markdownDocuments = generateItemMarkdown(id, ds);
                 break;
             case "U":
                 String markdown = generateTextMarkdown(id, ds);
@@ -70,7 +68,7 @@ public class MarkdownGenerator {
         return etext.generateMarkdown();
     }
 
-    private List<MarkdownDocument> generateItemMarkdown(String itemId, DataSource ds, boolean titleAsFilename)
+    private List<MarkdownDocument> generateItemMarkdown(String itemId, DataSource ds)
     {
         String itemIRI = BDR + itemId;
         Item item = new Item(itemIRI, ds);
@@ -139,11 +137,9 @@ public class MarkdownGenerator {
                 docSb.append(markdownForSection(workSection, 2));
             }
 
-            String textName = item.getId();
+            String textName = item.getTitle() + " " + item.getId();
             String title = item.getTitle();
-            if (titleAsFilename) {
-                textName = item.getTitle() + " " + item.getId();
-            }
+
             if (item.isOcr()) {
                 textName = "OCR " + textName;
             }
