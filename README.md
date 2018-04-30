@@ -19,7 +19,7 @@ For example:
         
 ## Required applications
 
-[Pandoc](http://pandoc.org/) is required to be installed
+[Pandoc](http://pandoc.org/) v1.x is required to be installed. v2 will not work for now. 
 
 ## Running
 
@@ -44,12 +44,12 @@ For example:
         --itemId, -id
           If supplied, only the item with this id will be processed.
           
-        --titleAsFilename, -t
-          Use the text title as the filename. Otherwise, the text's ID is used.
+        --epub, -e
+          Only generate epub files
           Default: false
-          
+            
         --docx, -d
-          Generate docx files in addition to the epubs
+          Only generate docx files
           Default: false
           
         --help, -h
