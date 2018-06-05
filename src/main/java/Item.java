@@ -44,8 +44,13 @@ public class Item extends BDRCResource {
                 }
             }
             if (workResource != null) {
-                workResource = dataSource.loadResource(workResource.getIRI());
-                work = new Work(workResource, dataSource);
+                try {
+                    workResource = dataSource.loadResource(workResource.getIRI());
+                    work = new Work(workResource, dataSource);
+                } catch(Exception e) {
+                    System.out.println("Exception loading work " + workResource.getIRI());
+                    System.out.println(e);
+                }
             }
         }
 

@@ -25,7 +25,12 @@ class DocumentRunnable implements Runnable {
 
     @Override
     public void run() {
-        documentGenerator.generateDocuments(generateEpub, generateDocx);
+        try {
+            documentGenerator.generateDocuments(generateEpub, generateDocx);
+        } catch(Exception e) {
+            System.out.println("Exception generating document");
+            System.out.println(e);
+        }
     }
 }
 
